@@ -8,18 +8,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --cream:#FBF4E9;
+    --cream:#F6EDE7;
     --paper:#FFFFFF;
-    --ink:#2B2118;
-    --ink-soft:#6B5D4F;
-    --tomato:#B23A2F;
-    --tomato-dark:#8C2C22;
-    --gold:#D9A441;
-    --gold-soft:#F2DFB0;
+    --ink:#3D2A22;
+    --ink-soft:#7A6459;
+    --tomato:#8B3E28;
+    --tomato-dark:#6B2E1C;
+    --gold:#C68F56;
+    --gold-soft:#EFDCC3;
     --sage:#71906A;
     --plum:#6E5772;
     --plum-soft:#EAE3EC;
-    --line:#E7DAC6;
+    --line:#E9D9CE;
     --radius:16px;
     --shadow: 0 1px 2px rgba(43,33,24,0.06), 0 8px 24px rgba(43,33,24,0.08);
   }
@@ -463,20 +463,21 @@
    Edit prices/names here if the site changes.
    ───────────────────────────────────────────────────────────────────── */
 const PRODUCTS = [
-  { id:'immunity',  name:'Immunity Booster', nameZh:'蟲草花補肺強身湯', price:16, tier:'standard' },
+  { id:'detox',     name:'Detox',            nameZh:'章魚赤小豆扁豆袪濕湯', price:20, tier:'standard' },
   { id:'digestion', name:'Digestion',        nameZh:'濕重脾胃差清補涼', price:16, tier:'standard' },
+  { id:'hotair',    name:'Hot Air',          nameZh:'土茯苓赤小豆湯',   price:16, tier:'standard' },
+  { id:'immunity',  name:'Immunity Booster', nameZh:'蟲草花補肺強身湯', price:16, tier:'standard' },
+  { id:'nourish',   name:'Nourish',          nameZh:'日本昆布海底椰湯', price:20, tier:'standard' },
+  { id:'relief',    name:'Relief',           nameZh:'川貝雪梨南北杏湯', price:20, tier:'standard' },
+  { id:'rest',      name:'Rest',             nameZh:'花旗參清熱寧神湯', price:20, tier:'standard' },
   { id:'stress',    name:'Stress Fighter',   nameZh:'四神湯',           price:16, tier:'standard' },
   { id:'women',     name:'Women',            nameZh:'北芪黨參消腫養陰湯', price:16, tier:'standard' },
-  { id:'hotair',    name:'Hot Air',          nameZh:'土茯苓赤小豆湯',   price:16, tier:'standard' },
-  { id:'nourish',   name:'Nourish',          nameZh:'日本昆布海底椰湯', price:20, tier:'standard' },
-  { id:'detox',     name:'Detox',            nameZh:'章魚赤小豆扁豆袪濕湯', price:20, tier:'standard' },
-  { id:'rest',      name:'Rest',             nameZh:'花旗參清熱寧神湯', price:20, tier:'standard' },
-  { id:'relief',    name:'Relief',           nameZh:'川貝雪梨南北杏湯', price:20, tier:'standard' },
 
-  { id:'nursing',   name:'Nursing',          nameZh:'上奶湯',           price:20, tier:'large' },
   { id:'cleanser',  name:'Cleanser',         nameZh:'生化湯',           price:20, tier:'large' },
+  { id:'nursing',   name:'Nursing',          nameZh:'上奶湯',           price:20, tier:'large' },
   { id:'restore',   name:'Restore',          nameZh:'當歸北芪藥膳湯',   price:30, tier:'large' },
 ];
+
 
 /* ── STATE ─────────────────────────────────────────────────────────── */
 let cart = [];         // pending units: {uid, id, name, nameZh, price, tier}
