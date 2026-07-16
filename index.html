@@ -595,6 +595,101 @@
     color:var(--tomato-dark);
   }
 
+  /* ── GIVEAWAY MODAL ───────────────────────────────────────────────── */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(43,33,24,0.45);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    z-index:50;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-sheet{
+    background:var(--paper);
+    width:100%;
+    max-width:460px;
+    max-height:88vh;
+    overflow-y:auto;
+    border-radius:20px 20px 0 0;
+    padding:20px 18px 24px;
+    box-shadow:0 -4px 24px rgba(0,0,0,0.2);
+  }
+  .modal-title{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:19px;
+    margin:0 0 2px;
+  }
+  .modal-sub{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:2px 0 14px;
+    line-height:1.4;
+  }
+  .checklist-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .checklist-row input[type="checkbox"]{
+    width:19px;
+    height:19px;
+    accent-color:var(--tomato);
+    flex-shrink:0;
+  }
+  .checklist-name{
+    flex:1;
+    font-size:13.5px;
+    font-weight:600;
+  }
+  .checklist-name .zh{
+    font-family:'Noto Sans TC', 'Inter', sans-serif;
+    font-weight:400;
+    font-size:11px;
+    color:var(--ink-soft);
+    display:block;
+  }
+  .checklist-qty{
+    width:56px;
+    font-family:'Space Mono', monospace;
+    font-size:14px;
+    text-align:right;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:6px 8px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  .checklist-qty:disabled{ opacity:0.4; }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+  }
+  .modal-btn{
+    flex:1;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    font-weight:700;
+    border-radius:12px;
+    padding:12px;
+    cursor:pointer;
+    border:none;
+  }
+  .modal-btn.cancel{
+    background:var(--cream);
+    border:1.5px solid var(--line);
+    color:var(--ink-soft);
+  }
+  .modal-btn.confirm{
+    background:var(--tomato);
+    color:#fff;
+  }
+
   /* ── SUMMARY (Closing Till screen) ────────────────────────────────── */
   .summary-stat-row{
     display:flex;
@@ -613,6 +708,32 @@
     font-size:12.5px;
     color:var(--ink-soft);
     padding:8px 0;
+  }
+
+  /* ── TILL RECONCILIATION (Closing Till) ───────────────────────────── */
+  .till-recon{
+    background:var(--cream);
+    border-radius:10px;
+    padding:4px 10px;
+    margin-bottom:12px;
+  }
+  .till-recon .summary-stat-row .value{ font-size:14px; }
+  .till-flag{
+    margin-top:10px;
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    line-height:1.4;
+  }
+  .till-flag.short{
+    background:#FBE2DA;
+    color:var(--tomato-dark);
+    border:1px solid var(--tomato);
+  }
+  .till-flag.ok{
+    background:#EAF0E7;
+    color:var(--sage);
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -714,6 +835,7 @@
     </div>
 
     <button class="clear-link" id="clearBtn">Clear this order</button>
+    <button class="btn-secondary" id="giveawayBtn">🎁 Give away free packs</button>
     <button class="btn-secondary" id="doneSellingBtn">Done selling → Closing Till</button>
 
   </div>
@@ -726,25 +848,50 @@
       <div class="card-header">Today's Summary</div>
       <div class="card-sub" id="summaryMarketLine">Nothing sold yet this market day.</div>
       <div class="summary-stat-row"><span class="label">Total packs sold</span><span class="value" id="summaryPacks">0</span></div>
-      <div class="summary-stat-row"><span class="label">Total revenue</span><span class="value" id="summaryRevenue">$0</span></div>
       <div id="summaryProductRows"></div>
+      <div class="summary-stat-row" style="margin-top:8px;"><span class="label">Total sales (before HST)</span><span class="value" id="summarySubtotal">$0</span></div>
+      <div class="summary-stat-row"><span class="label">HST collected</span><span class="value" id="summaryTax">$0</span></div>
+      <div class="summary-stat-row"><span class="label">Total revenue (incl. HST)</span><span class="value" id="summaryRevenue">$0</span></div>
       <div class="section-label" style="margin-top:14px;"><span>Payment breakdown</span></div>
       <div id="summaryPaymentRows"></div>
+      <div class="summary-stat-row" style="margin-top:14px;"><span class="label">Free packs given away</span><span class="value" id="summaryGiveaways">0</span></div>
+      <div class="section-label" style="margin-top:6px;"><span>Giveaways</span></div>
+      <div id="summaryGiveawayRows"></div>
     </div>
 
     <div class="card disabled" id="closingTillCard">
       <div class="card-header">Closing Till</div>
       <div class="card-sub">Count what's in the till at the end of the day. Every field starts blank. Confirming this ends the day and resets Today's total.</div>
+
+      <div class="till-recon">
+        <div class="summary-stat-row"><span class="label">Opening till</span><span class="value" id="reconOpening">$0.00</span></div>
+        <div class="summary-stat-row"><span class="label">+ Cash sales today</span><span class="value" id="reconCashSales">$0.00</span></div>
+        <div class="summary-stat-row"><span class="label">= Expected in till</span><span class="value" id="reconExpected">$0.00</span></div>
+      </div>
+
       <div id="closeDenomRows"></div>
       <div class="denom-total-row">
         <span>Counted total</span>
         <span class="value" id="closeDenomTotal">$0.00</span>
       </div>
+      <div class="till-flag" id="tillFlag" style="display:none;"></div>
       <button class="btn-primary danger" id="saveClosingBtn">Confirm &amp; close till — ends the day</button>
     </div>
 
   </div>
 
+</div>
+
+<div class="modal-overlay" id="giveawayModalOverlay">
+  <div class="modal-sheet">
+    <h2 class="modal-title">Give away free packs</h2>
+    <p class="modal-sub">Separate from the buy-4-get-1 promo. Check off what's being given away and enter how many of each — this is tracked but doesn't add to revenue.</p>
+    <div id="giveawayChecklist"></div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="giveawayCancelBtn">Cancel</button>
+      <button class="modal-btn confirm" id="giveawayConfirmBtn">Log giveaway</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -775,11 +922,35 @@ const PRODUCTS = [
    Markets, mirrored from the "Markets" tab of the Souperwell Market
    Tracker sheet. Not yet live-synced (Apps Script doesn't exist yet) —
    edit this list by hand until that connection is built.
+   Each market occurrence is its own dated entry (same venue can repeat
+   monthly, e.g. Jtown Market) so Sales Log rows never collide by name.
+   Past dates are filtered out of the dropdown automatically below —
+   historical rows always stay in the Google Sheet itself, this list
+   only controls what shows up as selectable going forward.
    ───────────────────────────────────────────────────────────────────── */
 const MARKETS = [
-  'Beckett Farm Public School Fun Fair',
-  'Jtown Market',
+  { name:'Jtown Market',            date:'2026-07-18' },
+  { name:'Jtown Market',            date:'2026-07-19' },
+  { name:'Jtown Market',            date:'2026-08-15' },
+  { name:'Jtown Market',            date:'2026-08-16' },
+  { name:'Mississauga HK Market',   date:'2026-08-15' },
+  { name:'Mississauga HK Market',   date:'2026-08-16' },
+  { name:'Jtown Market',            date:'2026-09-12' },
+  { name:'Jtown Market',            date:'2026-09-13' },
+  { name:'Cabbagetown Festival',    date:'2026-09-12' },
+  { name:'Cabbagetown Festival',    date:'2026-09-13' },
+  { name:'Baby Show',               date:'2026-10-03' },
+  { name:'Baby Show',               date:'2026-10-04' },
+  { name:'National Women Show',     date:'2026-11-06' },
+  { name:'National Women Show',     date:'2026-11-07' },
+  { name:'National Women Show',     date:'2026-11-08' },
 ];
+
+function formatMarketLabel(m){
+  const d = new Date(m.date + 'T00:00:00');
+  const dateStr = d.toLocaleDateString('en-CA', { month:'short', day:'numeric', year:'numeric' });
+  return `${m.name} — ${dateStr}`;
+}
 
 /* ─────────────────────────────────────────────────────────────────────
    Till denomination breakdown — STANDARD Canadian cash breakdown,
@@ -800,6 +971,14 @@ const TILL_DENOMINATIONS = [
   { id:'c005', label:'Nickels (5¢)',   value:0.05, kind:'coin' },
 ];
 
+/* ─────────────────────────────────────────────────────────────────────
+   HST — 13% (Ontario), applied to EMT and Square only. Cash sales are
+   not taxed (per Tasha's Stage 1 feedback round). Applied at checkout
+   on the post-promo-discount subtotal.
+   ───────────────────────────────────────────────────────────────────── */
+const HST_RATE = 0.13;
+const HST_PAYMENT_METHODS = ['EMT', 'Square'];
+
 /* ── STATE ─────────────────────────────────────────────────────────── */
 let cart = [];          // pending units: {uid, id, name, nameZh, price, tier}
 let uidCounter = 0;
@@ -811,6 +990,7 @@ let tillOpened = false;
 let openingTillTotal = null;
 let salesLog = [];      // shaped to mirror the planned Sales Log tab schema (append-only, never cleared)
 let sessionSales = [];  // this market day's Sale line-items only, cleared on open/close
+let sessionGiveaways = []; // this market day's Giveaway line-items only, cleared on open/close
 let txnCounter = 0;
 PRODUCTS.forEach(p => todayCounts[p.id] = 0);
 
@@ -884,14 +1064,18 @@ function buildGrid(containerId, tier){
 buildGrid('productGridStandard', 'standard');
 buildGrid('productGridLarge', 'large');
 
-/* ── MARKET PICKER ─────────────────────────────────────────────────── */
+/* ── MARKET PICKER (only today-or-future markets are selectable) ────── */
 const marketSelect = document.getElementById('marketSelect');
-MARKETS.forEach(m => {
-  const opt = document.createElement('option');
-  opt.value = m;
-  opt.textContent = m;
-  marketSelect.appendChild(opt);
-});
+const todayStr = new Date().toISOString().slice(0, 10);
+MARKETS
+  .filter(m => m.date >= todayStr)
+  .sort((a, b) => a.date.localeCompare(b.date))
+  .forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = formatMarketLabel(m);
+    opt.textContent = formatMarketLabel(m);
+    marketSelect.appendChild(opt);
+  });
 marketSelect.addEventListener('change', () => {
   selectedMarket = marketSelect.value;
   document.getElementById('openingTillCard').classList.toggle('disabled', !selectedMarket || tillOpened);
@@ -927,7 +1111,7 @@ function clearCart(){
 document.getElementById('clearBtn').addEventListener('click', clearCart);
 
 /* ── TILL DENOMINATION ROWS (shared builder, used for both cards) ───── */
-function buildDenomRows(rowsEl, totalEl){
+function buildDenomRows(rowsEl, totalEl, onChange){
   rowsEl.innerHTML = TILL_DENOMINATIONS.map(d => `
     <div class="denom-row">
       <div>
@@ -938,9 +1122,13 @@ function buildDenomRows(rowsEl, totalEl){
     </div>
   `).join('');
   rowsEl.querySelectorAll('.denom-input').forEach(inp => {
-    inp.addEventListener('input', () => updateDenomTotal(rowsEl, totalEl));
+    inp.addEventListener('input', () => {
+      updateDenomTotal(rowsEl, totalEl);
+      if (onChange) onChange();
+    });
   });
   updateDenomTotal(rowsEl, totalEl);
+  if (onChange) onChange();
 }
 
 function updateDenomTotal(rowsEl, totalEl){
@@ -967,7 +1155,50 @@ const openDenomTotalEl = document.getElementById('openDenomTotal');
 const closeDenomRowsEl = document.getElementById('closeDenomRows');
 const closeDenomTotalEl = document.getElementById('closeDenomTotal');
 buildDenomRows(openDenomRowsEl, openDenomTotalEl);
-buildDenomRows(closeDenomRowsEl, closeDenomTotalEl);
+buildDenomRows(closeDenomRowsEl, closeDenomTotalEl, checkTillVariance);
+
+/* ── TILL RECONCILIATION (Closing Till) ───────────────────────────────
+   Safeguard per Tasha's feedback: EMT/Square never touch the physical
+   till, so the only cash that should be in the drawer at close is what
+   was there at open plus today's Cash sales. If the actual count comes
+   in under that, flag it — don't block closing, since a real shortage
+   still needs to be recorded, but make it impossible to miss. ───────── */
+function cashSalesTotal(){
+  return sessionSales.filter(s => s.paymentMethod === 'Cash').reduce((sum, s) => sum + s.total, 0);
+}
+
+function updateTillRecon(){
+  const opening = openingTillTotal || 0;
+  const cashSales = cashSalesTotal();
+  const expected = opening + cashSales;
+  document.getElementById('reconOpening').textContent = fmt(opening);
+  document.getElementById('reconCashSales').textContent = fmt(cashSales);
+  document.getElementById('reconExpected').textContent = fmt(expected);
+  return expected;
+}
+
+function checkTillVariance(){
+  const expected = updateTillRecon();
+  const counted = updateDenomTotal(closeDenomRowsEl, closeDenomTotalEl);
+  const flagEl = document.getElementById('tillFlag');
+  const diff = counted - expected;
+
+  if (!tillOpened){
+    flagEl.style.display = 'none';
+    return;
+  }
+  if (diff < -0.001){
+    flagEl.style.display = 'block';
+    flagEl.className = 'till-flag short';
+    flagEl.textContent = `⚠ Till is ${fmt(Math.abs(diff))} short of expected (${fmt(counted)} counted vs ${fmt(expected)} expected). Recount before closing, or note why it's short.`;
+  } else {
+    flagEl.style.display = 'block';
+    flagEl.className = 'till-flag ok';
+    flagEl.textContent = diff > 0.001
+      ? `✓ ${fmt(diff)} over expected — that's fine, just double-check the count.`
+      : `✓ Matches expected.`;
+  }
+}
 
 /* ── OPENING TILL ──────────────────────────────────────────────────── */
 document.getElementById('saveOpeningBtn').addEventListener('click', () => {
@@ -985,6 +1216,7 @@ document.getElementById('saveOpeningBtn').addEventListener('click', () => {
   tillOpened = true;
   openingTillTotal = total;
   sessionSales = [];
+  sessionGiveaways = [];
 
   const now = new Date();
   document.getElementById('openingSummary').style.display = 'block';
@@ -1001,10 +1233,22 @@ document.getElementById('saveOpeningBtn').addEventListener('click', () => {
 /* ── CLOSING TILL ──────────────────────────────────────────────────── */
 document.getElementById('saveClosingBtn').addEventListener('click', () => {
   if (!tillOpened) return;
-  const ok = window.confirm("Confirm the closing count and end the day? This resets Today's total and can't be undone.");
+
+  const expected = updateTillRecon();
+  const total = updateDenomTotal(closeDenomRowsEl, closeDenomTotalEl);
+  const shortfall = expected - total;
+
+  let confirmMsg = "You are now closing the till for this market. Are you sure you want to close till?";
+
+  if (shortfall > 0.001){
+    confirmMsg =
+      `⚠ Till is ${fmt(shortfall)} short of expected (${fmt(total)} counted vs ${fmt(expected)} expected).\n\n` +
+      confirmMsg;
+  }
+
+  const ok = window.confirm(confirmMsg);
   if (!ok) return;
 
-  const total = updateDenomTotal(closeDenomRowsEl, closeDenomTotalEl);
   const counts = readDenomCounts(closeDenomRowsEl);
 
   salesLog.push({
@@ -1026,12 +1270,14 @@ document.getElementById('saveClosingBtn').addEventListener('click', () => {
   openingTillTotal = null;
   selectedMarket = '';
   sessionSales = [];
+  sessionGiveaways = [];
   marketSelect.value = '';
   marketSelect.disabled = false;
 
   document.getElementById('openingSummary').style.display = 'none';
   buildDenomRows(openDenomRowsEl, openDenomTotalEl);
-  buildDenomRows(closeDenomRowsEl, closeDenomTotalEl);
+  buildDenomRows(closeDenomRowsEl, closeDenomTotalEl, checkTillVariance);
+  document.getElementById('tillFlag').style.display = 'none';
   document.getElementById('openingTillCard').classList.add('disabled');
   document.getElementById('closingTillCard').classList.add('disabled');
 
@@ -1045,15 +1291,99 @@ document.getElementById('saveClosingBtn').addEventListener('click', () => {
   render();
 });
 
+/* ── FREE GIVEAWAY (separate from the buy-4-get-1 promo) ─────────────
+   Checklist of every product; cashier checks off what's being given
+   away and enters a quantity. Logged with its own Entry Type, $0
+   revenue, but still bumps the product's Today count since inventory
+   still left the table. ───────────────────────────────────────────── */
+const giveawayModalOverlay = document.getElementById('giveawayModalOverlay');
+const giveawayChecklistEl = document.getElementById('giveawayChecklist');
+
+function buildGiveawayChecklist(){
+  giveawayChecklistEl.innerHTML = PRODUCTS.map(p => `
+    <div class="checklist-row">
+      <input type="checkbox" id="give-${p.id}" data-id="${p.id}">
+      <label class="checklist-name" for="give-${p.id}">${p.name}<span class="zh">${p.nameZh}</span></label>
+      <input type="number" class="checklist-qty" id="giveqty-${p.id}" min="1" step="1" value="1" disabled>
+    </div>
+  `).join('');
+  giveawayChecklistEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      document.getElementById('giveqty-' + cb.dataset.id).disabled = !cb.checked;
+    });
+  });
+}
+buildGiveawayChecklist();
+
+document.getElementById('giveawayBtn').addEventListener('click', () => {
+  buildGiveawayChecklist(); // reset to blank/unchecked every time it opens
+  giveawayModalOverlay.classList.add('open');
+});
+document.getElementById('giveawayCancelBtn').addEventListener('click', () => {
+  giveawayModalOverlay.classList.remove('open');
+});
+
+document.getElementById('giveawayConfirmBtn').addEventListener('click', () => {
+  if (!selectedMarket || !tillOpened) return;
+  const txnId = 'GIVE-' + Date.now();
+  const timestamp = new Date().toISOString();
+  let anyChecked = false;
+  let firstRow = true;
+
+  PRODUCTS.forEach(p => {
+    const cb = document.getElementById('give-' + p.id);
+    if (!cb.checked) return;
+    const qty = parseInt(document.getElementById('giveqty-' + p.id).value, 10) || 0;
+    if (qty <= 0) return;
+    anyChecked = true;
+
+    const entry = {
+      transactionId: txnId,
+      timestamp,
+      market: selectedMarket,
+      product: p.name,
+      tier: p.tier,
+      qty: qty,
+      unitPrice: p.price,
+      freeApplied: true,
+      total: 0,
+      tax: 0,
+      paymentMethod: '',
+      notes: 'Free giveaway',
+      entryType: 'Giveaway',
+      firstRowOfTxn: firstRow,
+    };
+    salesLog.push(entry);
+    sessionGiveaways.push(entry);
+    firstRow = false;
+
+    todayCounts[p.id] += qty;
+    document.getElementById('todaycount-' + p.id).textContent = 'Today: ' + todayCounts[p.id];
+  });
+
+  if (!anyChecked){
+    giveawayModalOverlay.classList.remove('open');
+    return;
+  }
+
+  giveawayModalOverlay.classList.remove('open');
+  render();
+});
+
 /* ── CLOSING SCREEN SUMMARY ───────────────────────────────────────── */
 function renderClosingSummary(){
   document.getElementById('closingTillCard').classList.toggle('disabled', !tillOpened);
+  checkTillVariance();
 
   document.getElementById('summaryMarketLine').textContent = selectedMarket
     ? `What sold today at ${selectedMarket}.`
     : "Nothing sold yet this market day.";
   document.getElementById('summaryPacks').textContent = sessionSales.length;
+  const taxCollected = sessionSales.reduce((s, e) => s + (e.tax || 0), 0);
+  document.getElementById('summarySubtotal').textContent = fmt(todayTotal - taxCollected);
+  document.getElementById('summaryTax').textContent = fmt(taxCollected);
   document.getElementById('summaryRevenue').textContent = fmt(todayTotal);
+  document.getElementById('summaryGiveaways').textContent = sessionGiveaways.reduce((s, g) => s + g.qty, 0);
 
   const productRowsEl = document.getElementById('summaryProductRows');
   if (sessionSales.length === 0){
@@ -1061,13 +1391,14 @@ function renderClosingSummary(){
   } else {
     const byProduct = {};
     sessionSales.forEach(s => {
-      if (!byProduct[s.product]) byProduct[s.product] = { qty: 0, revenue: 0 };
+      if (!byProduct[s.product]) byProduct[s.product] = { qty: 0, revenue: 0, freeQty: 0 };
       byProduct[s.product].qty += 1;
       byProduct[s.product].revenue += s.total;
+      if (s.freeApplied) byProduct[s.product].freeQty += 1;
     });
     productRowsEl.innerHTML = Object.entries(byProduct).map(([name, d]) => `
       <div class="receipt-row">
-        <span class="qty-name">${d.qty} × ${name}</span>
+        <span class="qty-name">${d.qty} × ${name}${d.freeQty > 0 ? `<span class="free-tag">${d.freeQty} FREE</span>` : ''}</span>
         <span>${fmt(d.revenue)}</span>
       </div>`).join('');
   }
@@ -1079,7 +1410,7 @@ function renderClosingSummary(){
     const byMethod = { Cash: { revenue: 0, txns: new Set() }, EMT: { revenue: 0, txns: new Set() }, Square: { revenue: 0, txns: new Set() } };
     sessionSales.forEach(s => {
       if (!byMethod[s.paymentMethod]) byMethod[s.paymentMethod] = { revenue: 0, txns: new Set() };
-      byMethod[s.paymentMethod].revenue += s.total;
+      byMethod[s.paymentMethod].revenue += s.total + (s.tax || 0); // includes HST so this matches what was actually collected
       byMethod[s.paymentMethod].txns.add(s.transactionId);
     });
     paymentRowsEl.innerHTML = Object.entries(byMethod)
@@ -1090,21 +1421,47 @@ function renderClosingSummary(){
           <span>${fmt(d.revenue)}</span>
         </div>`).join('') || '<div class="summary-empty">—</div>';
   }
+
+  const giveawayRowsEl = document.getElementById('summaryGiveawayRows');
+  if (sessionGiveaways.length === 0){
+    giveawayRowsEl.innerHTML = '<div class="summary-empty">None given away yet.</div>';
+  } else {
+    giveawayRowsEl.innerHTML = sessionGiveaways.map(g => `
+      <div class="receipt-row">
+        <span class="qty-name">${g.qty} × ${g.product}</span>
+        <span class="free-tag">FREE</span>
+      </div>`).join('');
+  }
 }
 
 /* ── PROMO MATH: cheapest STANDARD pack free for every completed group of 5.
-   Large packs are always full price and never counted toward the promo. ── */
+   Grouped by PRODUCT first (all units of one flavour together, in catalog
+   order), then chunked into runs of 5 — the cheapest unit within each
+   completed run of 5 is free. This matches how a cashier actually rings
+   up "5 of these, then 5 of those": buying 5x Detox ($20) + 5x Digestion
+   ($16) frees 1x Detox + 1x Digestion, not just the two cheapest units
+   in the whole cart. Large packs are always full price and never counted
+   toward the promo. ── */
 function computeTotals(units){
   const standardUnits = units.filter(u => u.tier === 'standard');
   const largeUnits = units.filter(u => u.tier === 'large');
 
-  const n = standardUnits.length;
-  const freeCount = Math.floor(n / 5);
-  const sortedStandard = [...standardUnits].sort((a,b) => a.price - b.price);
-  const freeUids = new Set(sortedStandard.slice(0, freeCount).map(u => u.uid));
+  const orderedStandard = [];
+  PRODUCTS.filter(p => p.tier === 'standard').forEach(p => {
+    orderedStandard.push(...standardUnits.filter(u => u.id === p.id));
+  });
+
+  const n = orderedStandard.length;
+  const freeUids = new Set();
+  for (let i = 0; i + 5 <= orderedStandard.length; i += 5){
+    const group = orderedStandard.slice(i, i + 5);
+    const cheapest = group.reduce((min, u) => (u.price < min.price ? u : min), group[0]);
+    freeUids.add(cheapest.uid);
+  }
+  const freeCount = freeUids.size;
 
   const standardSubtotal = standardUnits.reduce((s,u) => s + u.price, 0);
-  const discount = sortedStandard.slice(0, freeCount).reduce((s,u) => s + u.price, 0);
+  const discount = standardUnits.filter(u => freeUids.has(u.uid)).reduce((s,u) => s + u.price, 0);
   const largeSubtotal = largeUnits.reduce((s,u) => s + u.price, 0);
 
   const subtotal = standardSubtotal + largeSubtotal;
@@ -1183,12 +1540,19 @@ function render(){
     if (standardRows) rows += `<div class="receipt-group-label">Standard packs</div>` + standardRows;
     if (largeRows) rows += `<div class="receipt-group-label">Large packs</div>` + largeRows;
 
+    const hstApplicable = HST_PAYMENT_METHODS.includes(selectedPayment);
+    const tax = hstApplicable ? Math.round(total * HST_RATE * 100) / 100 : 0;
+    const grandTotal = total + tax;
+
     rows += `<hr class="receipt-divider">`;
     rows += `<div class="receipt-total-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>`;
     if (discount > 0){
       rows += `<div class="receipt-total-row discount"><span>Buy 4 get 1 free</span><span>&minus;${fmt(discount)}</span></div>`;
     }
-    rows += `<div class="receipt-total-row grand"><span>Total due</span><span>${fmt(total)}</span></div>`;
+    if (selectedPayment){
+      rows += `<div class="receipt-total-row"><span>HST (13%)${hstApplicable ? '' : ' — n/a for Cash'}</span><span>${hstApplicable ? fmt(tax) : '$0'}</span></div>`;
+    }
+    rows += `<div class="receipt-total-row grand"><span>Total due</span><span>${fmt(grandTotal)}</span></div>`;
     receiptInner.innerHTML = rows;
   }
 
@@ -1251,6 +1615,10 @@ function confirmSale(){
   if (cart.length === 0 || !selectedMarket || !tillOpened || !selectedPayment) return;
   const { freeUids, total } = computeTotals(cart);
 
+  const hstApplicable = HST_PAYMENT_METHODS.includes(selectedPayment);
+  const tax = hstApplicable ? Math.round(total * HST_RATE * 100) / 100 : 0;
+  const grandTotal = total + tax;
+
   const txnId = 'TXN-' + Date.now() + '-' + (++txnCounter);
   const timestamp = new Date().toISOString();
   let firstRow = true;
@@ -1265,6 +1633,7 @@ function confirmSale(){
       unitPrice: u.price,
       freeApplied: freeUids.has(u.uid),
       total: freeUids.has(u.uid) ? 0 : u.price,
+      tax: firstRow ? tax : 0, // HST for the whole transaction lives on the first row only, so summing doesn't double count
       paymentMethod: selectedPayment,
       notes: '',
       entryType: 'Sale',
@@ -1280,7 +1649,7 @@ function confirmSale(){
     todayCounts[p.id] += qty;
     document.getElementById('todaycount-' + p.id).textContent = 'Today: ' + todayCounts[p.id];
   });
-  todayTotal += total;
+  todayTotal += grandTotal;
   document.getElementById('todayTotal').textContent = fmt(todayTotal);
   cart = [];
   selectedPayment = '';
