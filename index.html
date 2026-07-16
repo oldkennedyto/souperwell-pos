@@ -87,6 +87,109 @@
     color:var(--tomato-dark);
   }
 
+  /* ── MODE TABS (mirrors the cashier's actual day: open → sell → close) ─ */
+  .mode-tabs{
+    display:flex;
+    gap:6px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:4px;
+    box-shadow:var(--shadow);
+  }
+  .mode-tab{
+    flex:1;
+    border:none;
+    background:none;
+    border-radius:999px;
+    padding:10px 6px;
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink-soft);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mode-tab.active{
+    background:var(--tomato);
+    color:#fff;
+  }
+  .mode-tab.locked{
+    opacity:0.4;
+    cursor:not-allowed;
+  }
+
+  .screen{
+    display:none;
+    flex-direction:column;
+    gap:16px;
+  }
+  .screen.active{ display:flex; }
+
+  /* ── CARD (generic) ───────────────────────────────────────────────── */
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 16px 14px;
+    box-shadow:var(--shadow);
+  }
+  .card-header{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:17px;
+    margin:0 0 2px;
+  }
+  .card-sub{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:2px 0 12px;
+    line-height:1.4;
+  }
+  .card.disabled{
+    opacity:0.45;
+    pointer-events:none;
+  }
+  .till-summary{
+    font-size:13px;
+    color:var(--sage);
+    font-weight:600;
+    background:#EAF0E7;
+    border-radius:10px;
+    padding:9px 11px;
+    margin-top:10px;
+  }
+  .btn-primary{
+    width:100%;
+    margin-top:16px;
+    padding:13px;
+    border:none;
+    border-radius:12px;
+    background:var(--tomato);
+    color:#fff;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn-primary:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn-primary.danger{ background:var(--tomato-dark); }
+  .btn-secondary{
+    width:100%;
+    margin-top:6px;
+    padding:12px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:700;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+
   /* ── PROMO PROGRESS ─────────────────────────────────────────────────── */
   .promo-card{
     background:var(--paper);
@@ -397,6 +500,121 @@
     padding:0 8px;
   }
 
+  /* ── MARKET SELECT ─────────────────────────────────────────────────── */
+  select.market-select{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    font-weight:600;
+    color:var(--ink);
+    background:var(--cream);
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:11px 12px;
+    appearance:none;
+    cursor:pointer;
+  }
+
+  /* ── PAYMENT METHOD ───────────────────────────────────────────────── */
+  .payment-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    box-shadow:var(--shadow);
+  }
+  .payment-label{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .payment-options{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:8px;
+    margin-top:8px;
+  }
+  .payment-btn{
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
+    background:var(--cream);
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:10px 6px;
+    cursor:pointer;
+    text-align:center;
+  }
+  .payment-btn.selected{
+    background:var(--tomato);
+    border-color:var(--tomato);
+    color:#fff;
+  }
+
+  /* ── TILL DENOMINATION ROWS ───────────────────────────────────────── */
+  .denom-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .denom-label{
+    font-size:13.5px;
+    font-weight:600;
+  }
+  .denom-sub{
+    font-size:10.5px;
+    color:var(--ink-soft);
+  }
+  .denom-input{
+    width:70px;
+    font-family:'Space Mono', monospace;
+    font-size:14px;
+    text-align:right;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:7px 8px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  .denom-input::placeholder{ color:var(--ink-soft); opacity:0.6; }
+  .denom-total-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding-top:14px;
+    font-size:16px;
+    font-weight:700;
+  }
+  .denom-total-row .value{
+    font-family:'Space Mono', monospace;
+    color:var(--tomato-dark);
+  }
+
+  /* ── SUMMARY (Closing Till screen) ────────────────────────────────── */
+  .summary-stat-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:6px 0;
+  }
+  .summary-stat-row .label{ font-size:13px; color:var(--ink-soft); }
+  .summary-stat-row .value{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:16px;
+    color:var(--tomato-dark);
+  }
+  .summary-empty{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    padding:8px 0;
+  }
+
   @media (prefers-reduced-motion: reduce){
     .stamp, .tile, .swipe-fill{ transition:none !important; }
   }
@@ -417,40 +635,115 @@
     </div>
   </div>
 
-  <div class="promo-card">
-    <div class="promo-top">
-      <span class="promo-title">Buy 4, get 1 free</span>
-      <span class="promo-earned" id="earnedBadge">🎁 1 free applied</span>
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-tab="opening">🧾 Opening Till</button>
+    <button class="mode-tab locked" data-tab="sell">☕ Sell</button>
+    <button class="mode-tab locked" data-tab="closing">📋 Closing Till</button>
+  </div>
+
+  <!-- ═══════ 1. OPENING TILL SCREEN ═══════
+       First stop of the day: pick the market, then count the float.
+       Sell unlocks once both are done. ───────────────────────────── -->
+  <div class="screen active" id="screen-opening">
+
+    <div class="card">
+      <div class="card-header">Market</div>
+      <div class="card-sub">Pick today's market. Required before you can open the till or take sales.</div>
+      <select class="market-select" id="marketSelect">
+        <option value="" disabled selected>Select market…</option>
+      </select>
     </div>
-    <div class="stamp-row" id="stampRow"></div>
-    <div class="promo-note">Applies to the standard packs only. Every 5th standard pack in an order is free; the tool always picks the cheapest one in each group of 5, so the discount is automatic no matter which flavours are in the mix. Large packs are sold at full price and don't count toward this.</div>
-  </div>
 
-  <div>
-    <div class="section-label"><span>Standard packs</span><span class="tag promo">buy 4 get 1 free</span></div>
-    <div class="grid" id="productGridStandard"></div>
-  </div>
-
-  <div>
-    <div class="section-label"><span>Large packs</span><span class="tag plain">no promo</span></div>
-    <div class="grid" id="productGridLarge"></div>
-  </div>
-
-  <div class="receipt" id="receiptCard">
-    <div class="receipt-inner" id="receiptInner">
-      <div class="receipt-empty" id="receiptEmpty">Tap a pack above to start this order.</div>
+    <div class="card disabled" id="openingTillCard">
+      <div class="card-header">Opening Till</div>
+      <div class="card-sub">Count the float in the till right now. Every field starts blank — enter what you actually count, don't estimate.</div>
+      <div id="openDenomRows"></div>
+      <div class="denom-total-row">
+        <span>Counted total</span>
+        <span class="value" id="openDenomTotal">$0.00</span>
+      </div>
+      <button class="btn-primary" id="saveOpeningBtn">Save opening count &amp; start selling</button>
+      <div class="till-summary" id="openingSummary" style="display:none;"></div>
     </div>
-    <div class="receipt-teeth"></div>
+
   </div>
 
-  <div class="swipe-track" id="swipeTrack">
-    <div class="swipe-fill" id="swipeFill"></div>
-    <div class="swipe-label" id="swipeLabel">Swipe to confirm sale</div>
-    <div class="swipe-thumb" id="swipeThumb">→</div>
+  <!-- ═══════ 2. SELL SCREEN ═══════
+       Where the actual ringing-up happens, once the day is set up. ── -->
+  <div class="screen" id="screen-sell">
+
+    <div class="promo-card">
+      <div class="promo-top">
+        <span class="promo-title">Buy 4, get 1 free</span>
+        <span class="promo-earned" id="earnedBadge">🎁 1 free applied</span>
+      </div>
+      <div class="stamp-row" id="stampRow"></div>
+      <div class="promo-note">Applies to the standard packs only. Every 5th standard pack in an order is free; the tool always picks the cheapest one in each group of 5, so the discount is automatic no matter which flavours are in the mix. Large packs are sold at full price and don't count toward this.</div>
+    </div>
+
+    <div>
+      <div class="section-label"><span>Standard packs</span><span class="tag promo">buy 4 get 1 free</span></div>
+      <div class="grid" id="productGridStandard"></div>
+    </div>
+
+    <div>
+      <div class="section-label"><span>Large packs</span><span class="tag plain">no promo</span></div>
+      <div class="grid" id="productGridLarge"></div>
+    </div>
+
+    <div class="receipt" id="receiptCard">
+      <div class="receipt-inner" id="receiptInner">
+        <div class="receipt-empty" id="receiptEmpty">Tap a pack above to start this order.</div>
+      </div>
+      <div class="receipt-teeth"></div>
+    </div>
+
+    <div class="payment-card">
+      <div class="payment-label">Payment method</div>
+      <div class="payment-options" id="paymentOptions">
+        <button class="payment-btn" data-method="Cash">Cash</button>
+        <button class="payment-btn" data-method="EMT">EMT</button>
+        <button class="payment-btn" data-method="Square">Square</button>
+      </div>
+    </div>
+
+    <div class="swipe-track" id="swipeTrack">
+      <div class="swipe-fill" id="swipeFill"></div>
+      <div class="swipe-label" id="swipeLabel">Swipe to confirm sale</div>
+      <div class="swipe-thumb" id="swipeThumb">→</div>
+    </div>
+
+    <button class="clear-link" id="clearBtn">Clear this order</button>
+    <button class="btn-secondary" id="doneSellingBtn">Done selling → Closing Till</button>
+
   </div>
 
-  <button class="clear-link" id="clearBtn">Clear this order</button>
-  <button class="clear-link" id="endDayBtn">End of day, reset today's total</button>
+  <!-- ═══════ 3. CLOSING TILL SCREEN ═══════
+       End of the day: see what sold, then count the till out. ────── -->
+  <div class="screen" id="screen-closing">
+
+    <div class="card">
+      <div class="card-header">Today's Summary</div>
+      <div class="card-sub" id="summaryMarketLine">Nothing sold yet this market day.</div>
+      <div class="summary-stat-row"><span class="label">Total packs sold</span><span class="value" id="summaryPacks">0</span></div>
+      <div class="summary-stat-row"><span class="label">Total revenue</span><span class="value" id="summaryRevenue">$0</span></div>
+      <div id="summaryProductRows"></div>
+      <div class="section-label" style="margin-top:14px;"><span>Payment breakdown</span></div>
+      <div id="summaryPaymentRows"></div>
+    </div>
+
+    <div class="card disabled" id="closingTillCard">
+      <div class="card-header">Closing Till</div>
+      <div class="card-sub">Count what's in the till at the end of the day. Every field starts blank. Confirming this ends the day and resets Today's total.</div>
+      <div id="closeDenomRows"></div>
+      <div class="denom-total-row">
+        <span>Counted total</span>
+        <span class="value" id="closeDenomTotal">$0.00</span>
+      </div>
+      <button class="btn-primary danger" id="saveClosingBtn">Confirm &amp; close till — ends the day</button>
+    </div>
+
+  </div>
 
 </div>
 
@@ -478,13 +771,87 @@ const PRODUCTS = [
   { id:'restore',   name:'Restore',          nameZh:'當歸北芪藥膳湯',   price:30, tier:'large' },
 ];
 
+/* ─────────────────────────────────────────────────────────────────────
+   Markets, mirrored from the "Markets" tab of the Souperwell Market
+   Tracker sheet. Not yet live-synced (Apps Script doesn't exist yet) —
+   edit this list by hand until that connection is built.
+   ───────────────────────────────────────────────────────────────────── */
+const MARKETS = [
+  'Beckett Farm Public School Fun Fair',
+  'Jtown Market',
+];
+
+/* ─────────────────────────────────────────────────────────────────────
+   Till denomination breakdown — STANDARD Canadian cash breakdown,
+   used as a placeholder until Tasha confirms her actual counting
+   breakdown. Flagged unconfirmed in CLAUDE.md Section 7. Edit this
+   list once she confirms (add/remove rows as needed).
+   ───────────────────────────────────────────────────────────────────── */
+const TILL_DENOMINATIONS = [
+  { id:'b100', label:'$100 bills', value:100, kind:'bill' },
+  { id:'b50',  label:'$50 bills',  value:50,  kind:'bill' },
+  { id:'b20',  label:'$20 bills',  value:20,  kind:'bill' },
+  { id:'b10',  label:'$10 bills',  value:10,  kind:'bill' },
+  { id:'b5',   label:'$5 bills',   value:5,   kind:'bill' },
+  { id:'c2',   label:'Toonies ($2)',  value:2,    kind:'coin' },
+  { id:'c1',   label:'Loonies ($1)',  value:1,    kind:'coin' },
+  { id:'c025', label:'Quarters (25¢)', value:0.25, kind:'coin' },
+  { id:'c010', label:'Dimes (10¢)',    value:0.10, kind:'coin' },
+  { id:'c005', label:'Nickels (5¢)',   value:0.05, kind:'coin' },
+];
 
 /* ── STATE ─────────────────────────────────────────────────────────── */
-let cart = [];         // pending units: {uid, id, name, nameZh, price, tier}
+let cart = [];          // pending units: {uid, id, name, nameZh, price, tier}
 let uidCounter = 0;
-let todayCounts = {};  // id -> qty sold today
+let todayCounts = {};   // id -> qty sold today
 let todayTotal = 0;
+let selectedMarket = '';
+let selectedPayment = '';
+let tillOpened = false;
+let openingTillTotal = null;
+let salesLog = [];      // shaped to mirror the planned Sales Log tab schema (append-only, never cleared)
+let sessionSales = [];  // this market day's Sale line-items only, cleared on open/close
+let txnCounter = 0;
 PRODUCTS.forEach(p => todayCounts[p.id] = 0);
+
+/* ─────────────────────────────────────────────────────────────────────
+   THE CASHIER'S DAY, as three tabs in order:
+   1. Opening Till   — pick the market, count the float in. Blank
+                        fields, nothing pre-filled. Saving this is what
+                        unlocks the Sell tab.
+   2. Sell           — ring up orders. Each sale needs a payment method.
+                        Today's total accrues in the header as you go.
+   3. Closing Till   — once you're done selling, see a summary of what
+                        moved today (packs, revenue, payment split),
+                        then count the float out. Confirming resets
+                        Today's total and re-locks Opening Till for the
+                        next market day.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* ── TAB SWITCHING ─────────────────────────────────────────────────── */
+function tabIsLocked(name){
+  return document.querySelector('.mode-tab[data-tab="' + name + '"]').classList.contains('locked');
+}
+function switchTab(name){
+  if (tabIsLocked(name)) return;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.getElementById('screen-opening').classList.toggle('active', name === 'opening');
+  document.getElementById('screen-sell').classList.toggle('active', name === 'sell');
+  document.getElementById('screen-closing').classList.toggle('active', name === 'closing');
+  if (name === 'closing') renderClosingSummary();
+}
+document.querySelectorAll('.mode-tab').forEach(t => {
+  t.addEventListener('click', () => switchTab(t.dataset.tab));
+});
+document.getElementById('doneSellingBtn').addEventListener('click', () => {
+  document.querySelector('.mode-tab[data-tab="closing"]').classList.remove('locked');
+  switchTab('closing');
+});
+
+function updateTabLocks(){
+  document.querySelector('.mode-tab[data-tab="sell"]').classList.toggle('locked', !(selectedMarket && tillOpened));
+  document.querySelector('.mode-tab[data-tab="closing"]').classList.toggle('locked', !tillOpened);
+}
 
 /* ── BUILD PRODUCT GRIDS ──────────────────────────────────────────── */
 function buildGrid(containerId, tier){
@@ -517,6 +884,30 @@ function buildGrid(containerId, tier){
 buildGrid('productGridStandard', 'standard');
 buildGrid('productGridLarge', 'large');
 
+/* ── MARKET PICKER ─────────────────────────────────────────────────── */
+const marketSelect = document.getElementById('marketSelect');
+MARKETS.forEach(m => {
+  const opt = document.createElement('option');
+  opt.value = m;
+  opt.textContent = m;
+  marketSelect.appendChild(opt);
+});
+marketSelect.addEventListener('change', () => {
+  selectedMarket = marketSelect.value;
+  document.getElementById('openingTillCard').classList.toggle('disabled', !selectedMarket || tillOpened);
+  updateTabLocks();
+  render();
+});
+
+/* ── PAYMENT METHOD PICKER ────────────────────────────────────────── */
+document.getElementById('paymentOptions').addEventListener('click', (e) => {
+  const btn = e.target.closest('.payment-btn');
+  if (!btn) return;
+  selectedPayment = btn.dataset.method;
+  document.querySelectorAll('.payment-btn').forEach(b => b.classList.toggle('selected', b === btn));
+  render();
+});
+
 /* ── CART OPERATIONS ──────────────────────────────────────────────── */
 function addUnit(id){
   const p = PRODUCTS.find(x => x.id === id);
@@ -535,17 +926,171 @@ function clearCart(){
 }
 document.getElementById('clearBtn').addEventListener('click', clearCart);
 
-function endDay(){
-  const ok = window.confirm("Reset today's total and start fresh for the next market? This can't be undone.");
+/* ── TILL DENOMINATION ROWS (shared builder, used for both cards) ───── */
+function buildDenomRows(rowsEl, totalEl){
+  rowsEl.innerHTML = TILL_DENOMINATIONS.map(d => `
+    <div class="denom-row">
+      <div>
+        <div class="denom-label">${d.label}</div>
+        <div class="denom-sub">${d.kind === 'bill' ? '× $' + d.value : '× $' + d.value.toFixed(2)} each</div>
+      </div>
+      <input class="denom-input" type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-denom="${d.id}">
+    </div>
+  `).join('');
+  rowsEl.querySelectorAll('.denom-input').forEach(inp => {
+    inp.addEventListener('input', () => updateDenomTotal(rowsEl, totalEl));
+  });
+  updateDenomTotal(rowsEl, totalEl);
+}
+
+function updateDenomTotal(rowsEl, totalEl){
+  let total = 0;
+  rowsEl.querySelectorAll('.denom-input').forEach(inp => {
+    const d = TILL_DENOMINATIONS.find(x => x.id === inp.dataset.denom);
+    const count = parseInt(inp.value, 10) || 0;
+    total += count * d.value;
+  });
+  totalEl.textContent = '$' + total.toFixed(2);
+  return total;
+}
+
+function readDenomCounts(rowsEl){
+  const counts = {};
+  rowsEl.querySelectorAll('.denom-input').forEach(inp => {
+    counts[inp.dataset.denom] = parseInt(inp.value, 10) || 0;
+  });
+  return counts;
+}
+
+const openDenomRowsEl = document.getElementById('openDenomRows');
+const openDenomTotalEl = document.getElementById('openDenomTotal');
+const closeDenomRowsEl = document.getElementById('closeDenomRows');
+const closeDenomTotalEl = document.getElementById('closeDenomTotal');
+buildDenomRows(openDenomRowsEl, openDenomTotalEl);
+buildDenomRows(closeDenomRowsEl, closeDenomTotalEl);
+
+/* ── OPENING TILL ──────────────────────────────────────────────────── */
+document.getElementById('saveOpeningBtn').addEventListener('click', () => {
+  if (!selectedMarket) return;
+  const total = updateDenomTotal(openDenomRowsEl, openDenomTotalEl);
+  const counts = readDenomCounts(openDenomRowsEl);
+
+  salesLog.push({
+    transactionId: '', timestamp: new Date().toISOString(), market: selectedMarket,
+    product: '', tier: '', qty: '', unitPrice: '', freeApplied: '', total: total,
+    paymentMethod: '', notes: '', entryType: 'Opening Till', firstRowOfTxn: '',
+    denominations: counts,
+  });
+
+  tillOpened = true;
+  openingTillTotal = total;
+  sessionSales = [];
+
+  const now = new Date();
+  document.getElementById('openingSummary').style.display = 'block';
+  document.getElementById('openingSummary').textContent =
+    'Opened at ' + fmt(total) + ' · ' + now.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+
+  marketSelect.disabled = true;
+  document.getElementById('openingTillCard').classList.add('disabled');
+  updateTabLocks();
+  switchTab('sell');
+  render();
+});
+
+/* ── CLOSING TILL ──────────────────────────────────────────────────── */
+document.getElementById('saveClosingBtn').addEventListener('click', () => {
+  if (!tillOpened) return;
+  const ok = window.confirm("Confirm the closing count and end the day? This resets Today's total and can't be undone.");
   if (!ok) return;
+
+  const total = updateDenomTotal(closeDenomRowsEl, closeDenomTotalEl);
+  const counts = readDenomCounts(closeDenomRowsEl);
+
+  salesLog.push({
+    transactionId: '', timestamp: new Date().toISOString(), market: selectedMarket,
+    product: '', tier: '', qty: '', unitPrice: '', freeApplied: '', total: total,
+    paymentMethod: '', notes: '', entryType: 'Closing Till', firstRowOfTxn: '',
+    denominations: counts,
+  });
+
+  // reset for the next market day
   todayTotal = 0;
   PRODUCTS.forEach(p => {
     todayCounts[p.id] = 0;
     document.getElementById('todaycount-' + p.id).textContent = 'Today: 0';
   });
   document.getElementById('todayTotal').textContent = fmt(todayTotal);
+
+  tillOpened = false;
+  openingTillTotal = null;
+  selectedMarket = '';
+  sessionSales = [];
+  marketSelect.value = '';
+  marketSelect.disabled = false;
+
+  document.getElementById('openingSummary').style.display = 'none';
+  buildDenomRows(openDenomRowsEl, openDenomTotalEl);
+  buildDenomRows(closeDenomRowsEl, closeDenomTotalEl);
+  document.getElementById('openingTillCard').classList.add('disabled');
+  document.getElementById('closingTillCard').classList.add('disabled');
+
+  cart = [];
+  selectedPayment = '';
+  document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('selected'));
+
+  document.querySelector('.mode-tab[data-tab="sell"]').classList.add('locked');
+  document.querySelector('.mode-tab[data-tab="closing"]').classList.add('locked');
+  switchTab('opening');
+  render();
+});
+
+/* ── CLOSING SCREEN SUMMARY ───────────────────────────────────────── */
+function renderClosingSummary(){
+  document.getElementById('closingTillCard').classList.toggle('disabled', !tillOpened);
+
+  document.getElementById('summaryMarketLine').textContent = selectedMarket
+    ? `What sold today at ${selectedMarket}.`
+    : "Nothing sold yet this market day.";
+  document.getElementById('summaryPacks').textContent = sessionSales.length;
+  document.getElementById('summaryRevenue').textContent = fmt(todayTotal);
+
+  const productRowsEl = document.getElementById('summaryProductRows');
+  if (sessionSales.length === 0){
+    productRowsEl.innerHTML = '<div class="summary-empty">No sales recorded yet.</div>';
+  } else {
+    const byProduct = {};
+    sessionSales.forEach(s => {
+      if (!byProduct[s.product]) byProduct[s.product] = { qty: 0, revenue: 0 };
+      byProduct[s.product].qty += 1;
+      byProduct[s.product].revenue += s.total;
+    });
+    productRowsEl.innerHTML = Object.entries(byProduct).map(([name, d]) => `
+      <div class="receipt-row">
+        <span class="qty-name">${d.qty} × ${name}</span>
+        <span>${fmt(d.revenue)}</span>
+      </div>`).join('');
+  }
+
+  const paymentRowsEl = document.getElementById('summaryPaymentRows');
+  if (sessionSales.length === 0){
+    paymentRowsEl.innerHTML = '<div class="summary-empty">—</div>';
+  } else {
+    const byMethod = { Cash: { revenue: 0, txns: new Set() }, EMT: { revenue: 0, txns: new Set() }, Square: { revenue: 0, txns: new Set() } };
+    sessionSales.forEach(s => {
+      if (!byMethod[s.paymentMethod]) byMethod[s.paymentMethod] = { revenue: 0, txns: new Set() };
+      byMethod[s.paymentMethod].revenue += s.total;
+      byMethod[s.paymentMethod].txns.add(s.transactionId);
+    });
+    paymentRowsEl.innerHTML = Object.entries(byMethod)
+      .filter(([, d]) => d.txns.size > 0)
+      .map(([method, d]) => `
+        <div class="receipt-row">
+          <span class="qty-name">${method} · ${d.txns.size} txn${d.txns.size === 1 ? '' : 's'}</span>
+          <span>${fmt(d.revenue)}</span>
+        </div>`).join('') || '<div class="summary-empty">—</div>';
+  }
 }
-document.getElementById('endDayBtn').addEventListener('click', endDay);
 
 /* ── PROMO MATH: cheapest STANDARD pack free for every completed group of 5.
    Large packs are always full price and never counted toward the promo. ── */
@@ -648,8 +1193,15 @@ function render(){
   }
 
   const track = document.getElementById('swipeTrack');
-  track.classList.toggle('enabled', cart.length > 0);
+  const readyForSales = !!selectedMarket && tillOpened;
+  const readyToCheckout = cart.length > 0 && readyForSales && !!selectedPayment;
+  track.classList.toggle('enabled', readyToCheckout);
+  document.getElementById('swipeLabel').textContent = cart.length === 0
+    ? 'Swipe to confirm sale'
+    : (!selectedPayment ? 'Select a payment method first' : 'Swipe to confirm sale');
   resetSwipeVisual();
+
+  if (document.getElementById('screen-closing').classList.contains('active')) renderClosingSummary();
 }
 
 /* ── SWIPE TO CONFIRM ─────────────────────────────────────────────── */
@@ -696,8 +1248,33 @@ window.addEventListener('mouseup', onPointerUp);
 window.addEventListener('touchend', onPointerUp);
 
 function confirmSale(){
-  if (cart.length === 0) return;
-  const { total } = computeTotals(cart);
+  if (cart.length === 0 || !selectedMarket || !tillOpened || !selectedPayment) return;
+  const { freeUids, total } = computeTotals(cart);
+
+  const txnId = 'TXN-' + Date.now() + '-' + (++txnCounter);
+  const timestamp = new Date().toISOString();
+  let firstRow = true;
+  cart.forEach(u => {
+    const entry = {
+      transactionId: txnId,
+      timestamp,
+      market: selectedMarket,
+      product: u.name,
+      tier: u.tier,
+      qty: 1,
+      unitPrice: u.price,
+      freeApplied: freeUids.has(u.uid),
+      total: freeUids.has(u.uid) ? 0 : u.price,
+      paymentMethod: selectedPayment,
+      notes: '',
+      entryType: 'Sale',
+      firstRowOfTxn: firstRow,
+    };
+    salesLog.push(entry);
+    sessionSales.push(entry);
+    firstRow = false;
+  });
+
   PRODUCTS.forEach(p => {
     const qty = cart.filter(u => u.id === p.id).length;
     todayCounts[p.id] += qty;
@@ -706,6 +1283,8 @@ function confirmSale(){
   todayTotal += total;
   document.getElementById('todayTotal').textContent = fmt(todayTotal);
   cart = [];
+  selectedPayment = '';
+  document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('selected'));
   render();
 }
 
