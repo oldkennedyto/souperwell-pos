@@ -554,6 +554,84 @@
     color:#fff;
   }
 
+  /* ── CASH RECEIVED / CHANGE DUE ───────────────────────────────────── */
+  .cash-quick-grid{
+    display:flex;
+    flex-wrap:nowrap;
+    gap:6px;
+    margin-top:8px;
+  }
+  .cash-quick-btn{
+    flex:1 1 0;
+    aspect-ratio:1;
+    min-width:0;
+    max-width:44px;
+    border-radius:50%;
+    font-family:'Inter', sans-serif;
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--ink);
+    background:var(--cream);
+    border:1.5px solid var(--line);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
+  .cash-quick-btn:active{
+    background:var(--tomato);
+    border-color:var(--tomato);
+    color:#fff;
+  }
+  .cash-manual-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-top:10px;
+  }
+  .cash-manual-row .cash-received-input{
+    margin-top:0;
+  }
+  .cash-clear-btn{
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:9px 12px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .cash-received-input{
+    flex:1;
+    width:100%;
+    font-family:'Space Mono', monospace;
+    font-size:16px;
+    padding:9px 10px;
+    margin-top:8px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    box-sizing:border-box;
+  }
+  .change-due{
+    margin-top:8px;
+    border-radius:10px;
+    padding:9px 12px;
+    font-size:13.5px;
+    font-weight:700;
+  }
+  .change-due.ok{
+    background:#EAF0E7;
+    color:var(--sage);
+  }
+  .change-due.short{
+    background:#FBE2DA;
+    color:var(--tomato-dark);
+  }
+
   /* ── TILL DENOMINATION ROWS ───────────────────────────────────────── */
   .denom-row{
     display:flex;
@@ -828,6 +906,24 @@
       </div>
     </div>
 
+    <div class="payment-card" id="cashCalcCard" style="display:none;">
+      <div class="payment-label">Cash received</div>
+      <div class="cash-quick-grid" id="cashQuickGrid">
+        <button type="button" class="cash-quick-btn" data-amount="100">$100</button>
+        <button type="button" class="cash-quick-btn" data-amount="50">$50</button>
+        <button type="button" class="cash-quick-btn" data-amount="20">$20</button>
+        <button type="button" class="cash-quick-btn" data-amount="10">$10</button>
+        <button type="button" class="cash-quick-btn" data-amount="5">$5</button>
+        <button type="button" class="cash-quick-btn" data-amount="2">$2</button>
+        <button type="button" class="cash-quick-btn" data-amount="1">$1</button>
+      </div>
+      <div class="cash-manual-row">
+        <input type="number" inputmode="decimal" step="0.01" min="0" placeholder="or type exact amount" class="cash-received-input" id="cashReceivedInput">
+        <button type="button" class="cash-clear-btn" id="cashClearBtn">Clear</button>
+      </div>
+      <div id="changeDueRow"></div>
+    </div>
+
     <div class="swipe-track" id="swipeTrack">
       <div class="swipe-fill" id="swipeFill"></div>
       <div class="swipe-label" id="swipeLabel">Swipe to confirm sale</div>
@@ -1089,7 +1185,43 @@ document.getElementById('paymentOptions').addEventListener('click', (e) => {
   if (!btn) return;
   selectedPayment = btn.dataset.method;
   document.querySelectorAll('.payment-btn').forEach(b => b.classList.toggle('selected', b === btn));
+  if (selectedPayment !== 'Cash') document.getElementById('cashReceivedInput').value = '';
   render();
+});
+
+/* ── CASH RECEIVED / CHANGE DUE CALCULATOR ────────────────────────── */
+let lastGrandTotal = 0;
+function updateChangeDue(){
+  const input = document.getElementById('cashReceivedInput');
+  const row = document.getElementById('changeDueRow');
+  const raw = input.value.trim();
+  if (raw === '' || isNaN(parseFloat(raw))){
+    row.innerHTML = '';
+    return;
+  }
+  const received = parseFloat(raw);
+  const change = Math.round((received - lastGrandTotal) * 100) / 100;
+  if (change < 0){
+    row.innerHTML = `<div class="change-due short">Short by ${fmt(Math.abs(change))}</div>`;
+  } else {
+    row.innerHTML = `<div class="change-due ok">Change due: ${fmt(change)}</div>`;
+  }
+}
+document.getElementById('cashReceivedInput').addEventListener('input', updateChangeDue);
+
+document.getElementById('cashQuickGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.cash-quick-btn');
+  if (!btn) return;
+  const input = document.getElementById('cashReceivedInput');
+  const current = parseFloat(input.value) || 0;
+  const add = parseFloat(btn.dataset.amount);
+  input.value = Math.round((current + add) * 100) / 100;
+  updateChangeDue();
+});
+
+document.getElementById('cashClearBtn').addEventListener('click', () => {
+  document.getElementById('cashReceivedInput').value = '';
+  updateChangeDue();
 });
 
 /* ── CART OPERATIONS ──────────────────────────────────────────────── */
@@ -1284,6 +1416,7 @@ document.getElementById('saveClosingBtn').addEventListener('click', () => {
   cart = [];
   selectedPayment = '';
   document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('cashReceivedInput').value = '';
 
   document.querySelector('.mode-tab[data-tab="sell"]').classList.add('locked');
   document.querySelector('.mode-tab[data-tab="closing"]').classList.add('locked');
@@ -1509,6 +1642,7 @@ function render(){
   const receiptInner = document.getElementById('receiptInner');
   if (cart.length === 0){
     receiptInner.innerHTML = '<div class="receipt-empty" id="receiptEmpty">Tap a pack above to start this order.</div>';
+    lastGrandTotal = 0;
   } else {
     let rows = '';
     const standardProducts = PRODUCTS.filter(p => p.tier === 'standard');
@@ -1554,7 +1688,11 @@ function render(){
     }
     rows += `<div class="receipt-total-row grand"><span>Total due</span><span>${fmt(grandTotal)}</span></div>`;
     receiptInner.innerHTML = rows;
+    lastGrandTotal = grandTotal;
   }
+
+  document.getElementById('cashCalcCard').style.display = selectedPayment === 'Cash' ? 'block' : 'none';
+  updateChangeDue();
 
   const track = document.getElementById('swipeTrack');
   const readyForSales = !!selectedMarket && tillOpened;
@@ -1654,6 +1792,7 @@ function confirmSale(){
   cart = [];
   selectedPayment = '';
   document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('cashReceivedInput').value = '';
   render();
 }
 
