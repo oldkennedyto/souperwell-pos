@@ -1002,7 +1002,7 @@ const PRODUCTS = [
   { id:'detox',     name:'Detox',            nameZh:'章魚赤小豆扁豆袪濕湯', price:20, tier:'standard' },
   { id:'digestion', name:'Digestion',        nameZh:'濕重脾胃差清補涼', price:16, tier:'standard' },
   { id:'hotair',    name:'Hot Air',          nameZh:'土茯苓赤小豆湯',   price:16, tier:'standard' },
-  { id:'immunity',  name:'Immunity Booster', nameZh:'蟲草花補肺強身湯', price:16, tier:'standard' },
+  { id:'immunity',  name:'Immunity Booster', nameZh:'蟲草花補肺強身湯', price:20, tier:'standard' },
   { id:'nourish',   name:'Nourish',          nameZh:'日本昆布海底椰湯', price:20, tier:'standard' },
   { id:'relief',    name:'Relief',           nameZh:'川貝雪梨南北杏湯', price:20, tier:'standard' },
   { id:'rest',      name:'Rest',             nameZh:'花旗參清熱寧神湯', price:20, tier:'standard' },
@@ -1089,6 +1089,38 @@ let sessionSales = [];  // this market day's Sale line-items only, cleared on op
 let sessionGiveaways = []; // this market day's Giveaway line-items only, cleared on open/close
 let txnCounter = 0;
 PRODUCTS.forEach(p => todayCounts[p.id] = 0);
+
+/* ─────────────────────────────────────────────────────────────────────
+   APPS SCRIPT WEB APP — sends each salesLog entry to Tasha's Sheet as
+   it happens. See CLAUDE.md Section 11 for the full write-up.
+
+   mode:'no-cors' + text/plain avoids the CORS preflight that a normal
+   cross-origin JSON POST would trigger (Apps Script Web Apps don't
+   reliably answer that preflight). The tradeoff: the response is opaque,
+   so this genuinely cannot tell whether the write succeeded or failed.
+   salesLog/sessionSales/todayTotal stay the source of truth for the
+   cashier's UI regardless of what happens on the network side -- a
+   failed send doesn't corrupt what the cashier sees, it just means that
+   entry never reaches the Sheet. No retry queue yet (flagged as a known
+   gap in CLAUDE.md Section 11, not solved here).
+   ───────────────────────────────────────────────────────────────────── */
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw03juwi6RYUHRr_5djv6XVGYdIH2VJmSiYNgxAzgi5i30SBnM2mq5fi6ZV8cz2SIs/exec';
+
+function sendToSheet(entries){
+  if (!WEBAPP_URL || entries.length === 0) return;
+  try {
+    fetch(WEBAPP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ entries }),
+    });
+  } catch (err) {
+    // Network-level failure only (e.g. offline at a market) -- the UI
+    // already reflects the sale via salesLog regardless, see comment above.
+    console.warn('sendToSheet failed:', err);
+  }
+}
 
 /* ─────────────────────────────────────────────────────────────────────
    THE CASHIER'S DAY, as three tabs in order:
@@ -1338,12 +1370,14 @@ document.getElementById('saveOpeningBtn').addEventListener('click', () => {
   const total = updateDenomTotal(openDenomRowsEl, openDenomTotalEl);
   const counts = readDenomCounts(openDenomRowsEl);
 
-  salesLog.push({
+  const openingEntry = {
     transactionId: '', timestamp: new Date().toISOString(), market: selectedMarket,
     product: '', tier: '', qty: '', unitPrice: '', freeApplied: '', total: total,
     paymentMethod: '', notes: '', entryType: 'Opening Till', firstRowOfTxn: '',
     denominations: counts,
-  });
+  };
+  salesLog.push(openingEntry);
+  sendToSheet([openingEntry]);
 
   tillOpened = true;
   openingTillTotal = total;
@@ -1383,12 +1417,14 @@ document.getElementById('saveClosingBtn').addEventListener('click', () => {
 
   const counts = readDenomCounts(closeDenomRowsEl);
 
-  salesLog.push({
+  const closingEntry = {
     transactionId: '', timestamp: new Date().toISOString(), market: selectedMarket,
     product: '', tier: '', qty: '', unitPrice: '', freeApplied: '', total: total,
     paymentMethod: '', notes: '', entryType: 'Closing Till', firstRowOfTxn: '',
     denominations: counts,
-  });
+  };
+  salesLog.push(closingEntry);
+  sendToSheet([closingEntry]);
 
   // reset for the next market day
   todayTotal = 0;
@@ -1462,6 +1498,7 @@ document.getElementById('giveawayConfirmBtn').addEventListener('click', () => {
   const timestamp = new Date().toISOString();
   let anyChecked = false;
   let firstRow = true;
+  const giveawayEntries = [];
 
   PRODUCTS.forEach(p => {
     const cb = document.getElementById('give-' + p.id);
@@ -1488,6 +1525,7 @@ document.getElementById('giveawayConfirmBtn').addEventListener('click', () => {
     };
     salesLog.push(entry);
     sessionGiveaways.push(entry);
+    giveawayEntries.push(entry);
     firstRow = false;
 
     todayCounts[p.id] += qty;
@@ -1499,6 +1537,7 @@ document.getElementById('giveawayConfirmBtn').addEventListener('click', () => {
     return;
   }
 
+  sendToSheet(giveawayEntries);
   giveawayModalOverlay.classList.remove('open');
   render();
 });
@@ -1760,6 +1799,7 @@ function confirmSale(){
   const txnId = 'TXN-' + Date.now() + '-' + (++txnCounter);
   const timestamp = new Date().toISOString();
   let firstRow = true;
+  const saleEntries = [];
   cart.forEach(u => {
     const entry = {
       transactionId: txnId,
@@ -1779,8 +1819,10 @@ function confirmSale(){
     };
     salesLog.push(entry);
     sessionSales.push(entry);
+    saleEntries.push(entry);
     firstRow = false;
   });
+  sendToSheet(saleEntries);
 
   PRODUCTS.forEach(p => {
     const qty = cart.filter(u => u.id === p.id).length;
