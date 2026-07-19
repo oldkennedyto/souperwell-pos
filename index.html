@@ -768,6 +768,66 @@
     color:#fff;
   }
 
+  /* ── TODAY'S SALES / VOID ─────────────────────────────────────────── */
+  .sale-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .sale-row-info{ flex:1; min-width:0; }
+  .sale-row-time{
+    font-size:11px;
+    color:var(--ink-soft);
+  }
+  .sale-row-items{
+    font-size:13.5px;
+    font-weight:600;
+  }
+  .sale-row-meta{
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  .sale-row-total{
+    font-family:'Space Mono', monospace;
+    font-size:13.5px;
+    font-weight:700;
+    white-space:nowrap;
+    text-align:right;
+  }
+  .void-btn{
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:700;
+    color:var(--tomato-dark);
+    background:#FBE2DA;
+    border:1.5px solid var(--tomato);
+    border-radius:10px;
+    padding:8px 12px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .sale-row.voided .sale-row-items,
+  .sale-row.voided .sale-row-total{
+    text-decoration:line-through;
+    opacity:0.5;
+  }
+  .voided-tag{
+    font-size:11px;
+    font-weight:700;
+    color:var(--tomato-dark);
+    flex-shrink:0;
+    white-space:nowrap;
+  }
+  .sale-row-empty{
+    font-size:13px;
+    color:var(--ink-soft);
+    text-align:center;
+    padding:20px 0;
+  }
+
   /* ── SUMMARY (Closing Till screen) ────────────────────────────────── */
   .summary-stat-row{
     display:flex;
@@ -932,6 +992,7 @@
 
     <button class="clear-link" id="clearBtn">Clear this order</button>
     <button class="btn-secondary" id="giveawayBtn">🎁 Give away free packs</button>
+    <button class="btn-secondary" id="todaySalesBtn">🧾 Today's sales</button>
     <button class="btn-secondary" id="doneSellingBtn">Done selling → Closing Till</button>
 
   </div>
@@ -990,6 +1051,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="todaySalesModalOverlay">
+  <div class="modal-sheet">
+    <h2 class="modal-title">Today's Sales</h2>
+    <p class="modal-sub">Void a sale if a customer changes their mind or a mistake was made. This can't be undone — a matching reversal is sent to the Sheet instead of deleting anything. Giveaways and till counts aren't shown here.</p>
+    <div id="todaySalesList"></div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="todaySalesCloseBtn" style="flex:1;">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ─────────────────────────────────────────────────────────────────────
    Souperwell herbal soup packs, pulled from
@@ -1015,38 +1087,25 @@ const PRODUCTS = [
 ];
 
 /* ─────────────────────────────────────────────────────────────────────
-   Markets, mirrored from the "Markets" tab of the Souperwell Market
-   Tracker sheet. Not yet live-synced (Apps Script doesn't exist yet) —
-   edit this list by hand until that connection is built.
-   Each market occurrence is its own dated entry (same venue can repeat
-   monthly, e.g. Jtown Market) so Sales Log rows never collide by name.
-   Past dates are filtered out of the dropdown automatically below —
-   historical rows always stay in the Google Sheet itself, this list
-   only controls what shows up as selectable going forward.
-   ───────────────────────────────────────────────────────────────────── */
-const MARKETS = [
-  { name:'Jtown Market',            date:'2026-07-18' },
-  { name:'Jtown Market',            date:'2026-07-19' },
-  { name:'Jtown Market',            date:'2026-08-15' },
-  { name:'Jtown Market',            date:'2026-08-16' },
-  { name:'Mississauga HK Market',   date:'2026-08-15' },
-  { name:'Mississauga HK Market',   date:'2026-08-16' },
-  { name:'Jtown Market',            date:'2026-09-12' },
-  { name:'Jtown Market',            date:'2026-09-13' },
-  { name:'Cabbagetown Festival',    date:'2026-09-12' },
-  { name:'Cabbagetown Festival',    date:'2026-09-13' },
-  { name:'Baby Show',               date:'2026-10-03' },
-  { name:'Baby Show',               date:'2026-10-04' },
-  { name:'National Women Show',     date:'2026-11-06' },
-  { name:'National Women Show',     date:'2026-11-07' },
-  { name:'National Women Show',     date:'2026-11-08' },
-];
+   Markets — live-synced from the "Markets" tab of the Souperwell Market
+   Tracker sheet (Code.gs's doGet?action=markets), not hardcoded here
+   anymore. loadMarkets() below fetches on page load via a JSONP-style
+   script tag (a plain fetch() can't reliably read an Apps Script Web
+   App's response cross-origin, same tradeoff as the write side —
+   CLAUDE.md Section 11).
 
-function formatMarketLabel(m){
-  const d = new Date(m.date + 'T00:00:00');
-  const dateStr = d.toLocaleDateString('en-CA', { month:'short', day:'numeric', year:'numeric' });
-  return `${m.name} — ${dateStr}`;
-}
+   Each market row's Market Name is used exactly as typed in the Sheet,
+   both for the dropdown and for what gets written to Sales Log's Market
+   column — nothing reformats it client-side, so recurring venues (e.g.
+   Jtown Market happening monthly) stay distinguishable exactly as
+   Tasha typed them ("Jtown Market — Jul 18, 2026"), and Sales Log rows
+   never collide by name.
+
+   Past dates are filtered out of the dropdown automatically below —
+   historical rows always stay in the Google Sheet itself, this only
+   controls what shows up as selectable going forward.
+   ───────────────────────────────────────────────────────────────────── */
+let MARKETS = []; // populated live from the Sheet's Markets tab on page load, see loadMarkets() below
 
 /* ─────────────────────────────────────────────────────────────────────
    Till denomination breakdown — STANDARD Canadian cash breakdown,
@@ -1087,6 +1146,7 @@ let openingTillTotal = null;
 let salesLog = [];      // shaped to mirror the planned Sales Log tab schema (append-only, never cleared)
 let sessionSales = [];  // this market day's Sale line-items only, cleared on open/close
 let sessionGiveaways = []; // this market day's Giveaway line-items only, cleared on open/close
+let voidedTxnIds = new Set(); // transaction IDs already voided this session, prevents double-voiding
 let txnCounter = 0;
 PRODUCTS.forEach(p => todayCounts[p.id] = 0);
 
@@ -1195,15 +1255,44 @@ buildGrid('productGridLarge', 'large');
 /* ── MARKET PICKER (only today-or-future markets are selectable) ────── */
 const marketSelect = document.getElementById('marketSelect');
 const todayStr = new Date().toISOString().slice(0, 10);
-MARKETS
-  .filter(m => m.date >= todayStr)
-  .sort((a, b) => a.date.localeCompare(b.date))
-  .forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = formatMarketLabel(m);
-    opt.textContent = formatMarketLabel(m);
-    marketSelect.appendChild(opt);
-  });
+
+function renderMarketOptions(){
+  const previousValue = marketSelect.value;
+  marketSelect.innerHTML = '<option value="" disabled selected>Select market…</option>';
+  MARKETS
+    .filter(m => m.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = m.name;
+      marketSelect.appendChild(opt);
+    });
+  // keep whatever was selected if it's still in the refreshed list (a
+  // till already opened shouldn't lose its market if markets reload)
+  if (previousValue && [...marketSelect.options].some(o => o.value === previousValue)){
+    marketSelect.value = previousValue;
+  }
+}
+
+/* ── Live-sync markets from the Sheet's Markets tab (Code.gs's
+   doGet?action=markets). JSONP via a script tag, not fetch() — see the
+   comment on the MARKETS declaration above for why. No fallback list and
+   no blocking error state if this fails: the smoke test is exactly what's
+   meant to catch that, per Albert. ───────────────────────────────────── */
+window.onMarketsLoaded = function(data){
+  MARKETS = (data && data.markets) || [];
+  renderMarketOptions();
+};
+
+function loadMarkets(){
+  const script = document.createElement('script');
+  script.src = WEBAPP_URL + '?action=markets&callback=onMarketsLoaded';
+  script.onerror = () => console.warn('loadMarkets: failed to reach Apps Script for the Markets list.');
+  document.head.appendChild(script);
+}
+loadMarkets();
+
 marketSelect.addEventListener('change', () => {
   selectedMarket = marketSelect.value;
   document.getElementById('openingTillCard').classList.toggle('disabled', !selectedMarket || tillOpened);
@@ -1383,6 +1472,7 @@ document.getElementById('saveOpeningBtn').addEventListener('click', () => {
   openingTillTotal = total;
   sessionSales = [];
   sessionGiveaways = [];
+  voidedTxnIds = new Set();
 
   const now = new Date();
   document.getElementById('openingSummary').style.display = 'block';
@@ -1439,6 +1529,7 @@ document.getElementById('saveClosingBtn').addEventListener('click', () => {
   selectedMarket = '';
   sessionSales = [];
   sessionGiveaways = [];
+  voidedTxnIds = new Set();
   marketSelect.value = '';
   marketSelect.disabled = false;
 
@@ -1540,6 +1631,130 @@ document.getElementById('giveawayConfirmBtn').addEventListener('click', () => {
   sendToSheet(giveawayEntries);
   giveawayModalOverlay.classList.remove('open');
   render();
+});
+
+/* ── TODAY'S SALES / VOID ─────────────────────────────────────────────
+   Undo a transaction from anywhere earlier in the same till session, not
+   just the most recent one -- for when a customer comes back after
+   another sale already happened in between.
+
+   Voiding never edits or removes the rows already sent to the Sheet; it
+   sends a matching negative "mirror" transaction instead (same product/
+   market/payment method, negated qty/total/tax). Sales Log ends up with
+   a full audit trail of what was sold and what was voided, and every
+   Summary formula (all SUM-based) nets back to the correct totals
+   automatically -- no Apps Script or Summary formula changes needed.
+   ───────────────────────────────────────────────────────────────────── */
+const todaySalesModalOverlay = document.getElementById('todaySalesModalOverlay');
+const todaySalesListEl = document.getElementById('todaySalesList');
+
+function groupSessionSalesByTxn(){
+  const order = [];
+  const byTxn = {};
+  sessionSales.forEach(entry => {
+    if (entry.transactionId.endsWith('-VOID')) return; // reversal rows aren't their own listing
+    if (!byTxn[entry.transactionId]){
+      byTxn[entry.transactionId] = [];
+      order.push(entry.transactionId);
+    }
+    byTxn[entry.transactionId].push(entry);
+  });
+  return order.map(txnId => byTxn[txnId]);
+}
+
+function buildTodaySalesList(){
+  const txns = groupSessionSalesByTxn();
+  if (txns.length === 0){
+    todaySalesListEl.innerHTML = '<div class="sale-row-empty">No sales yet this market day.</div>';
+    return;
+  }
+  todaySalesListEl.innerHTML = txns.slice().reverse().map(lines => {
+    const txnId = lines[0].transactionId;
+    const voided = voidedTxnIds.has(txnId);
+    const itemsStr = lines.map(l => `${l.qty}× ${l.product}`).join(', ');
+    const total = lines.reduce((sum, l) => sum + l.total + (l.tax || 0), 0);
+    const time = new Date(lines[0].timestamp).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    return `
+      <div class="sale-row ${voided ? 'voided' : ''}">
+        <div class="sale-row-info">
+          <div class="sale-row-time">${time} · ${lines[0].paymentMethod}</div>
+          <div class="sale-row-items">${itemsStr}</div>
+        </div>
+        <div class="sale-row-total">${fmt(total)}</div>
+        ${voided
+          ? '<span class="voided-tag">Voided</span>'
+          : `<button class="void-btn" data-txn="${txnId}">Void</button>`}
+      </div>`;
+  }).join('');
+
+  todaySalesListEl.querySelectorAll('.void-btn').forEach(btn => {
+    btn.addEventListener('click', () => voidTransaction(btn.dataset.txn));
+  });
+}
+
+function voidTransaction(txnId){
+  if (voidedTxnIds.has(txnId)) return;
+  const lines = sessionSales.filter(e => e.transactionId === txnId);
+  if (lines.length === 0) return;
+
+  const total = lines.reduce((sum, l) => sum + l.total + (l.tax || 0), 0);
+  const itemsStr = lines.map(l => `${l.qty}× ${l.product}`).join(', ');
+  const ok = window.confirm(`Void this ${fmt(total)} sale (${itemsStr}, ${lines[0].paymentMethod})? This can't be undone.`);
+  if (!ok) return;
+
+  const voidTxnId = txnId + '-VOID';
+  const timestamp = new Date().toISOString();
+  let firstRow = true;
+  const voidEntries = lines.map(l => {
+    const entry = {
+      transactionId: voidTxnId,
+      timestamp,
+      market: l.market,
+      product: l.product,
+      tier: l.tier,
+      qty: -l.qty,
+      unitPrice: l.unitPrice,
+      freeApplied: l.freeApplied,
+      total: -l.total,
+      tax: firstRow ? -(l.tax || 0) : 0,
+      paymentMethod: l.paymentMethod,
+      notes: 'Void of ' + txnId,
+      entryType: 'Sale',
+      firstRowOfTxn: firstRow,
+    };
+    firstRow = false;
+    return entry;
+  });
+
+  voidEntries.forEach(e => {
+    salesLog.push(e);
+    sessionSales.push(e);
+  });
+  sendToSheet(voidEntries);
+
+  voidedTxnIds.add(txnId);
+
+  // roll back today's on-screen tile counts/total for this transaction
+  lines.forEach(l => {
+    const product = PRODUCTS.find(p => p.name === l.product);
+    if (product){
+      todayCounts[product.id] -= l.qty;
+      document.getElementById('todaycount-' + product.id).textContent = 'Today: ' + todayCounts[product.id];
+    }
+  });
+  todayTotal -= total;
+  document.getElementById('todayTotal').textContent = fmt(todayTotal);
+
+  buildTodaySalesList();
+  render();
+}
+
+document.getElementById('todaySalesBtn').addEventListener('click', () => {
+  buildTodaySalesList();
+  todaySalesModalOverlay.classList.add('open');
+});
+document.getElementById('todaySalesCloseBtn').addEventListener('click', () => {
+  todaySalesModalOverlay.classList.remove('open');
 });
 
 /* ── CLOSING SCREEN SUMMARY ───────────────────────────────────────── */
