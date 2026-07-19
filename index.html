@@ -1252,12 +1252,24 @@ function buildGrid(containerId, tier){
 buildGrid('productGridStandard', 'standard');
 buildGrid('productGridLarge', 'large');
 
-/* ── MARKET PICKER (only today-or-future markets are selectable) ────── */
+/* ── MARKET PICKER (only today-or-future markets are selectable) ─────
+   "Today" is computed from the browser's LOCAL date, not UTC. toISOString()
+   always reports UTC, which rolls over to the next calendar day at 8PM
+   Eastern (during EDT) -- a market dated "today" would silently vanish
+   from the dropdown mid-evening, well before an actual market wraps up.
+   Surfaced by Tasha's own test market disappearing during a live test.
+   ───────────────────────────────────────────────────────────────────── */
 const marketSelect = document.getElementById('marketSelect');
-const todayStr = new Date().toISOString().slice(0, 10);
+function localDateStr(d = new Date()){
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 function renderMarketOptions(){
   const previousValue = marketSelect.value;
+  const todayStr = localDateStr(); // recomputed each render, not cached at page-load
   marketSelect.innerHTML = '<option value="" disabled selected>Select market…</option>';
   MARKETS
     .filter(m => m.date >= todayStr)
