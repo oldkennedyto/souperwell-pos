@@ -874,6 +874,26 @@
     color:var(--sage);
   }
 
+  /* ── SESSION BANNERS (localStorage restore / prior-day notice) ──────── */
+  .session-banner{
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    line-height:1.4;
+  }
+  .session-banner.restored{
+    background:var(--plum-soft);
+    color:var(--plum);
+    border:1px solid var(--plum);
+    cursor:pointer;
+  }
+  .session-banner.warn{
+    background:#FBE2DA;
+    color:var(--tomato-dark);
+    border:1px solid var(--tomato);
+  }
+
   @media (prefers-reduced-motion: reduce){
     .stamp, .tile, .swipe-fill{ transition:none !important; }
   }
@@ -899,6 +919,9 @@
     <button class="mode-tab locked" data-tab="sell">☕ Sell</button>
     <button class="mode-tab locked" data-tab="closing">📋 Closing Till</button>
   </div>
+
+  <div id="sessionRestoredBanner" class="session-banner restored" style="display:none;"></div>
+  <div id="priorDayBanner" class="session-banner warn" style="display:none;"></div>
 
   <!-- ═══════ 1. OPENING TILL SCREEN ═══════
        First stop of the day: pick the market, then count the float.
@@ -1143,6 +1166,7 @@ let selectedMarket = '';
 let selectedPayment = '';
 let tillOpened = false;
 let openingTillTotal = null;
+let openingSavedAt = null; // ISO timestamp of when Opening Till was saved -- drives the "prior day" banner and the restored-session time label
 let salesLog = [];      // shaped to mirror the planned Sales Log tab schema (append-only, never cleared)
 let sessionSales = [];  // this market day's Sale line-items only, cleared on open/close
 let sessionGiveaways = []; // this market day's Giveaway line-items only, cleared on open/close
@@ -1207,6 +1231,7 @@ function switchTab(name){
   document.getElementById('screen-sell').classList.toggle('active', name === 'sell');
   document.getElementById('screen-closing').classList.toggle('active', name === 'closing');
   if (name === 'closing') renderClosingSummary();
+  maybeSaveSession();
 }
 document.querySelectorAll('.mode-tab').forEach(t => {
   t.addEventListener('click', () => switchTab(t.dataset.tab));
@@ -1268,7 +1293,11 @@ function localDateStr(d = new Date()){
 }
 
 function renderMarketOptions(){
-  const previousValue = marketSelect.value;
+  // falls back to the `selectedMarket` state var, not just the <select>'s
+  // current DOM value -- covers the case where a restored session sets
+  // selectedMarket before loadMarkets()'s JSONP response has come back and
+  // populated any <option> to select in the first place
+  const previousValue = marketSelect.value || selectedMarket;
   const todayStr = localDateStr(); // recomputed each render, not cached at page-load
   marketSelect.innerHTML = '<option value="" disabled selected>Select market…</option>';
   MARKETS
@@ -1284,6 +1313,15 @@ function renderMarketOptions(){
   // till already opened shouldn't lose its market if markets reload)
   if (previousValue && [...marketSelect.options].some(o => o.value === previousValue)){
     marketSelect.value = previousValue;
+  } else if (tillOpened && selectedMarket){
+    // a till opened on a prior day (see priorDayBanner) shouldn't show a
+    // blank dropdown just because its date has since rolled past "today" --
+    // the field's disabled anyway once the till is open, this is display-only
+    const opt = document.createElement('option');
+    opt.value = selectedMarket;
+    opt.textContent = selectedMarket;
+    marketSelect.appendChild(opt);
+    marketSelect.value = selectedMarket;
   }
 }
 
@@ -1330,15 +1368,16 @@ function updateChangeDue(){
   const raw = input.value.trim();
   if (raw === '' || isNaN(parseFloat(raw))){
     row.innerHTML = '';
-    return;
-  }
-  const received = parseFloat(raw);
-  const change = Math.round((received - lastGrandTotal) * 100) / 100;
-  if (change < 0){
-    row.innerHTML = `<div class="change-due short">Short by ${fmt(Math.abs(change))}</div>`;
   } else {
-    row.innerHTML = `<div class="change-due ok">Change due: ${fmt(change)}</div>`;
+    const received = parseFloat(raw);
+    const change = Math.round((received - lastGrandTotal) * 100) / 100;
+    if (change < 0){
+      row.innerHTML = `<div class="change-due short">Short by ${fmt(Math.abs(change))}</div>`;
+    } else {
+      row.innerHTML = `<div class="change-due ok">Change due: ${fmt(change)}</div>`;
+    }
   }
+  maybeSaveSession();
 }
 document.getElementById('cashReceivedInput').addEventListener('input', updateChangeDue);
 
@@ -1487,6 +1526,7 @@ document.getElementById('saveOpeningBtn').addEventListener('click', () => {
   voidedTxnIds = new Set();
 
   const now = new Date();
+  openingSavedAt = now.toISOString();
   document.getElementById('openingSummary').style.display = 'block';
   document.getElementById('openingSummary').textContent =
     'Opened at ' + fmt(total) + ' · ' + now.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
@@ -1538,12 +1578,14 @@ document.getElementById('saveClosingBtn').addEventListener('click', () => {
 
   tillOpened = false;
   openingTillTotal = null;
+  openingSavedAt = null;
   selectedMarket = '';
   sessionSales = [];
   sessionGiveaways = [];
   voidedTxnIds = new Set();
   marketSelect.value = '';
   marketSelect.disabled = false;
+  clearSession(); // market day is genuinely done -- don't leave a restorable session behind for next time
 
   document.getElementById('openingSummary').style.display = 'none';
   buildDenomRows(openDenomRowsEl, openDenomTotalEl);
@@ -1970,6 +2012,8 @@ function render(){
   resetSwipeVisual();
 
   if (document.getElementById('screen-closing').classList.contains('active')) renderClosingSummary();
+  checkPriorDayBanner();
+  maybeSaveSession();
 }
 
 /* ── SWIPE TO CONFIRM ─────────────────────────────────────────────── */
@@ -2065,7 +2109,186 @@ function confirmSale(){
   render();
 }
 
-render();
+/* ─────────────────────────────────────────────────────────────────────
+   SESSION PERSISTENCE (localStorage) — added per Tasha's real-market
+   feedback: switching over to the Square app mid-sale to take a card
+   payment, then switching back, can get the browser tab reloaded or
+   killed by the OS (iOS Safari does this under memory pressure especially).
+   Since every bit of state here (open till, today's running total, the
+   in-progress cart before it's even been swipe-confirmed) lived only in
+   plain JS variables, that reload wiped it -- even though each confirmed
+   sale/till/giveaway had already separately made it to the Sheet via
+   sendToSheet().
+
+   Design, per Albert's decisions:
+   - The in-progress cart (pre-swipe, pre-payment) autosaves too, since
+     that's the exact moment a Square hand-off interrupts things and
+     nothing's hit the Sheet for it yet.
+   - Closing Till on a different calendar day than Opening Till (Tasha
+     described this happening) is allowed, not blocked -- just flagged
+     with a banner so nobody closes a stale day by accident.
+   - No manual "clear session" escape hatch. The realistic failure mode
+     isn't corrupted storage (a single synchronous localStorage write
+     doesn't partially fail), it's the restore logic choking on a stale
+     or malformed snapshot -- so that's handled by failing soft (any
+     missing/malformed data restores nothing, exactly like today) and by
+     an automatic staleness cutoff, rather than a user-facing control that
+     implies this breaks often when it shouldn't.
+   ───────────────────────────────────────────────────────────────────── */
+const SESSION_KEY = 'souperwellPOS.session.v1';
+const SESSION_STALE_HOURS = 72; // an untouched stored session older than this is treated as abandoned, not restored
+
+function currentActiveTab(){
+  const active = document.querySelector('.mode-tab.active');
+  return active ? active.dataset.tab : 'opening';
+}
+
+function buildSessionSnapshot(){
+  return {
+    v: 1,
+    savedAt: new Date().toISOString(),
+    activeTab: currentActiveTab(),
+    selectedMarket, tillOpened, openingTillTotal, openingSavedAt,
+    todayCounts, todayTotal, txnCounter, uidCounter,
+    cart, selectedPayment,
+    cashReceivedValue: document.getElementById('cashReceivedInput').value,
+    sessionSales, sessionGiveaways,
+    voidedTxnIds: [...voidedTxnIds],
+    salesLog,
+  };
+}
+
+function saveSession(){
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(buildSessionSnapshot()));
+  } catch (err) {
+    // storage full/unavailable (e.g. Safari private browsing) -- non-fatal,
+    // the cashier's on-screen state is still correct for this page load
+    console.warn('saveSession failed:', err);
+  }
+}
+
+function clearSession(){
+  try { localStorage.removeItem(SESSION_KEY); } catch (err) { /* ignore */ }
+}
+
+// only worth persisting once there's an actual market day in progress --
+// keeps a totally fresh load (nothing opened yet) storage-free, same as
+// today, and doubles as the "day is over" cleanup once both go back to empty
+function maybeSaveSession(){
+  if (tillOpened || cart.length > 0) saveSession();
+  else clearSession();
+}
+
+function loadStoredSession(){
+  let raw;
+  try { raw = localStorage.getItem(SESSION_KEY); } catch (err) { return null; }
+  if (!raw) return null;
+
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (err) {
+    console.warn('Stored session was corrupted, starting fresh.', err);
+    clearSession();
+    return null;
+  }
+
+  if (!data || typeof data !== 'object' || data.v !== 1 || !data.savedAt){
+    clearSession();
+    return null;
+  }
+
+  const savedAtMs = new Date(data.savedAt).getTime();
+  if (isNaN(savedAtMs) || (Date.now() - savedAtMs) / 36e5 > SESSION_STALE_HOURS){
+    console.warn(`Stored session is older than ${SESSION_STALE_HOURS}h, treating as abandoned.`);
+    clearSession();
+    return null;
+  }
+
+  return data;
+}
+
+function showRestoredBanner(savedAt){
+  const el = document.getElementById('sessionRestoredBanner');
+  if (!el) return;
+  const timeStr = new Date(savedAt).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  el.textContent = `↺ Restored your in-progress session from ${timeStr}. Tap to dismiss.`;
+  el.style.display = 'block';
+  const hide = () => { el.style.display = 'none'; };
+  el.addEventListener('click', hide, { once: true });
+  setTimeout(hide, 8000);
+}
+
+function checkPriorDayBanner(){
+  const el = document.getElementById('priorDayBanner');
+  if (!el) return;
+  if (tillOpened && openingSavedAt){
+    const openedDay = localDateStr(new Date(openingSavedAt));
+    if (openedDay !== localDateStr()){
+      el.style.display = 'block';
+      el.textContent = `⚠ Till opened ${new Date(openingSavedAt).toLocaleDateString([], {month:'short', day:'numeric'})} — you're completing a prior day's session.`;
+      return;
+    }
+  }
+  el.style.display = 'none';
+}
+
+function restoreSession(){
+  const data = loadStoredSession();
+  if (!data) return false;
+
+  try {
+    selectedMarket = data.selectedMarket || '';
+    tillOpened = !!data.tillOpened;
+    openingTillTotal = (typeof data.openingTillTotal === 'number') ? data.openingTillTotal : null;
+    openingSavedAt = data.openingSavedAt || null;
+    todayCounts = Object.assign({}, todayCounts, data.todayCounts || {});
+    todayTotal = (typeof data.todayTotal === 'number') ? data.todayTotal : 0;
+    txnCounter = (typeof data.txnCounter === 'number') ? data.txnCounter : 0;
+    uidCounter = (typeof data.uidCounter === 'number') ? data.uidCounter : 0;
+    cart = Array.isArray(data.cart) ? data.cart : [];
+    selectedPayment = data.selectedPayment || '';
+    sessionSales = Array.isArray(data.sessionSales) ? data.sessionSales : [];
+    sessionGiveaways = Array.isArray(data.sessionGiveaways) ? data.sessionGiveaways : [];
+    voidedTxnIds = new Set(Array.isArray(data.voidedTxnIds) ? data.voidedTxnIds : []);
+    salesLog = Array.isArray(data.salesLog) ? data.salesLog : [];
+
+    marketSelect.value = selectedMarket;
+    marketSelect.disabled = tillOpened;
+    document.getElementById('openingTillCard').classList.toggle('disabled', !selectedMarket || tillOpened);
+    if (tillOpened){
+      document.getElementById('openingSummary').style.display = 'block';
+      document.getElementById('openingSummary').textContent =
+        'Opened at ' + fmt(openingTillTotal || 0) +
+        (openingSavedAt ? ' · ' + new Date(openingSavedAt).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : '');
+    }
+    PRODUCTS.forEach(p => {
+      document.getElementById('todaycount-' + p.id).textContent = 'Today: ' + (todayCounts[p.id] || 0);
+    });
+    document.getElementById('todayTotal').textContent = fmt(todayTotal);
+    if (selectedPayment){
+      document.querySelectorAll('.payment-btn').forEach(b => b.classList.toggle('selected', b.dataset.method === selectedPayment));
+    }
+    if (typeof data.cashReceivedValue === 'string'){
+      document.getElementById('cashReceivedInput').value = data.cashReceivedValue;
+    }
+
+    updateTabLocks();
+    const targetTab = (data.activeTab && !tabIsLocked(data.activeTab)) ? data.activeTab : (tillOpened ? 'sell' : 'opening');
+    render();
+    switchTab(targetTab);
+    showRestoredBanner(data.savedAt);
+    return true;
+  } catch (err) {
+    console.warn('Failed to restore stored session, starting fresh instead.', err);
+    clearSession();
+    return false;
+  }
+}
+
+if (!restoreSession()){
+  render();
+}
 </script>
 </body>
 </html>
