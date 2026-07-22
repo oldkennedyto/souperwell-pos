@@ -934,6 +934,7 @@
       <select class="market-select" id="marketSelect">
         <option value="" disabled selected>Select market…</option>
       </select>
+      <div id="tillCheckStatus" class="session-banner restored" style="display:none; margin-top:10px;"></div>
     </div>
 
     <div class="card disabled" id="openingTillCard">
@@ -1343,11 +1344,100 @@ function loadMarkets(){
 }
 loadMarkets();
 
+/* ── CROSS-DEVICE TILL RESUME ─────────────────────────────────────────
+   Souperwell runs one till per market, but which phone is touching that
+   till can change over the course of the day (a different device opens
+   vs. closes, or picks up selling partway through) -- see CLAUDE.md
+   Section 14. Whenever a market is picked and this device doesn't already
+   think a till is open, ask the Sheet whether one actually is. Fails soft:
+   if the check errors out or times out, this just proceeds as if nothing
+   was found, identical to today's behavior. ───────────────────────────── */
+function checkTillState(marketName){
+  const statusEl = document.getElementById('tillCheckStatus');
+  let settled = false;
+
+  if (statusEl){
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Checking whether this till is already open on another device…';
+  }
+
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    if (statusEl) statusEl.style.display = 'none';
+  };
+
+  const script = document.createElement('script');
+  script.src = WEBAPP_URL + '?action=tillstate&market=' + encodeURIComponent(marketName) + '&callback=onTillStateLoaded';
+  script.onerror = finish;
+  document.head.appendChild(script);
+  setTimeout(finish, 6000); // don't leave the cashier staring at "checking..." forever on bad wifi
+
+  window.onTillStateLoaded = function(data){
+    finish();
+    if (data && data.open && data.market === marketName){
+      applyTillStateFromSheet(data);
+    }
+  };
+}
+
+function applyTillStateFromSheet(data){
+  selectedMarket = data.market;
+  tillOpened = true;
+  openingTillTotal = (typeof data.openingTillTotal === 'number') ? data.openingTillTotal : 0;
+  openingSavedAt = data.openingSavedAt || null;
+
+  const entries = Array.isArray(data.entries) ? data.entries : [];
+  sessionSales = entries.filter(e => e.entryType === 'Sale');
+  sessionGiveaways = entries.filter(e => e.entryType === 'Giveaway');
+
+  voidedTxnIds = new Set();
+  sessionSales.forEach(e => {
+    if (e.transactionId && e.transactionId.endsWith('-VOID')){
+      voidedTxnIds.add(e.transactionId.slice(0, -'-VOID'.length));
+    }
+  });
+
+  todayCounts = {};
+  PRODUCTS.forEach(p => todayCounts[p.id] = 0);
+  sessionSales.concat(sessionGiveaways).forEach(e => {
+    const p = PRODUCTS.find(pr => pr.name === e.product);
+    if (p) todayCounts[p.id] += (Number(e.qty) || 0);
+  });
+
+  // SUM-based, same principle as everywhere else here -- void mirror rows
+  // are already negative, so they net back out automatically
+  todayTotal = sessionSales.reduce((sum, e) => sum + (Number(e.total) || 0) + (Number(e.tax) || 0), 0);
+  txnCounter = Math.max(txnCounter, sessionSales.length);
+
+  marketSelect.value = selectedMarket;
+  marketSelect.disabled = true;
+  document.getElementById('openingTillCard').classList.add('disabled');
+  document.getElementById('openingSummary').style.display = 'block';
+  document.getElementById('openingSummary').textContent =
+    'Opened at ' + fmt(openingTillTotal) +
+    (openingSavedAt ? ' · ' + new Date(openingSavedAt).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : '') +
+    ' · resumed from another device';
+  PRODUCTS.forEach(p => {
+    document.getElementById('todaycount-' + p.id).textContent = 'Today: ' + (todayCounts[p.id] || 0);
+  });
+  document.getElementById('todayTotal').textContent = fmt(todayTotal);
+
+  updateTabLocks();
+  render();
+  switchTab('sell');
+  maybeSaveSession(); // this device now has an accurate local copy too, protecting the same-device interruption case going forward
+}
+
 marketSelect.addEventListener('change', () => {
   selectedMarket = marketSelect.value;
   document.getElementById('openingTillCard').classList.toggle('disabled', !selectedMarket || tillOpened);
   updateTabLocks();
   render();
+  // if this device doesn't already know a till is open for this market,
+  // ask the Sheet -- it might already be open from a different phone
+  // (see CLAUDE.md Section 14)
+  if (selectedMarket && !tillOpened) checkTillState(selectedMarket);
 });
 
 /* ── PAYMENT METHOD PICKER ────────────────────────────────────────── */
